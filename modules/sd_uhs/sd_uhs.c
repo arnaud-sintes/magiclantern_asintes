@@ -246,6 +246,10 @@ static unsigned int sd_uhs_init()
         menu_add("Debug", sd_uhs_menu, COUNT(sd_uhs_menu));
         menu_add("Movie", sd_uhs_menu1, COUNT(sd_uhs_menu1));
     }
+    else
+    {
+        sd_overclock = 0;
+    }
     
     return 0;
 }
