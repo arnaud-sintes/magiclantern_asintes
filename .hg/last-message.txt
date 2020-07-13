@@ -1,1 +1,1 @@
-io trace updates
+module.c:(Exclude sd_uhs auto enabled. Not working with sd card only)
