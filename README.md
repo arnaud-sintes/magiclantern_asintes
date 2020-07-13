@@ -1,29 +1,20 @@
-# README #
+Magic Lantern
+=============
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Magic Lantern (ML) is a software enhancement that offers increased
+functionality to the excellent Canon DSLR cameras.
+  
+It's an open framework, licensed under GPL, for developing extensions to the
+official firmware.
 
-### What is this repository for? ###
+Magic Lantern is not a *hack*, or a modified firmware, **it is an
+independent program that runs alongside Canon's own software**. 
+Each time you start your camera, Magic Lantern is loaded from your memory
+card. Our only modification was to enable the ability to run software
+from the memory card.
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+ML is being developed by photo and video enthusiasts, adding
+functionality such as: HDR images and video, timelapse, motion
+detection, focus assist tools, manual audio controls much more.
 
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+For more details on Magic Lantern please see [http://www.magiclantern.fm/](http://www.magiclantern.fm/)
