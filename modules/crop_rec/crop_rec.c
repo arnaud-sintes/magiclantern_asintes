@@ -322,6 +322,7 @@ static inline void FAST calc_skip_offsets(int * p_skip_left, int * p_skip_right,
             break;
             
         case CROP_PRESET_1x3:
+                skip_top        = 60;
             if (ratios == 0x1)
             {
                 skip_left       = 206;
@@ -1953,10 +1954,18 @@ static inline uint32_t reg_override_1x3(uint32_t reg, uint32_t old_val)
     
     switch (reg)
     {
-        case 0xC0F06804:
-            return set_25fps == 0x1 ? 0x8d6011b + reg_6804_width + (reg_6804_height << 16): 0x93a011b + reg_6804_width + (reg_6804_height << 16);
-        case 0xC0F0713c:
-            return set_25fps == 0x1 ? 0x8da + reg_713c: 0x93e + reg_713c;
+        {
+            case 0xC0F06804:
+                return (set_25fps && ratios) ? 0x8d6011b + reg_6804_width + (reg_6804_height << 16):
+            (set_25fps && !ratios) ? 0x8f8011b + reg_6804_width + (reg_6804_height << 16):
+            (!set_25fps && !ratios) ? 0x962011b + reg_6804_width + (reg_6804_height << 16):
+            0x93a011b + reg_6804_width + (reg_6804_height << 16);
+            case 0xC0F0713c:
+                return (set_25fps && ratios) ? 0x8da + reg_713c:
+            (set_25fps && !ratios) ? 0x8f8 + reg_713c:
+            (!set_25fps && !ratios) ? 0x962 + reg_713c:
+            0x93e + reg_713c;
+        }
             
         case 0xC0F06014:
             return set_25fps == 0x1 ? 0x9bd + reg_6014: 0xa27 + reg_6014;

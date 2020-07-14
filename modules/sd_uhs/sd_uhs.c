@@ -186,7 +186,7 @@ static struct menu_entry sd_uhs_menu1[] =
 static unsigned int sd_uhs_init()
 {
     //needed with manual lenses cause it stalls liveview.
-    while (is_movie_mode() && !lv)
+    while (is_movie_mode() && !lv && sd_overclock)
     {
         msleep(100);
     }

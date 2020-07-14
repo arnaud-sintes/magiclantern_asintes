@@ -1,1 +1,1 @@
-sd_uhs.c(5d3 turn off sd_uhs when cf card only)
+crop_rec.c:(5d3 refining no ratio anamorphic)
