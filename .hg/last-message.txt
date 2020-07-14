@@ -1,1 +1,1 @@
-crop_rec.c:,sd_uhs.c:(5D3 reduce resolution anamorphic no ratio due to corruption, safe guard when mixing cf and sd cards sd patch)
+crop_rec.c:(5D3 back to square one. Corruption otherwise)
