@@ -1,1 +1,1 @@
-mlv_lite.c:(5d3 grayscale preview while recording all anamorphic modes)
+crop_rec.c:(5d3 correction reg 713c anamorphic modes)
