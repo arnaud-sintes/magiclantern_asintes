@@ -8,7 +8,4 @@ lua/ml-lua-shim.o: lua/ml-lua-shim.c lua/ml-lua-shim.h \
  dietlibc/include/sys/select.h dietlibc/include/signal.h \
  dietlibc/include/sys/time.h dietlibc/include/sys/ucontext.h \
  dietlibc/include/asm/sigcontext.h dietlibc/include/asm/arm-sigcontext.h \
- dietlibc/include/sys/stat.h ../../src/fio-ml.h dietlibc/include/errno.h \
- umm_malloc/umm_malloc.h umm_malloc/umm_malloc_cfg.h ../../src/arm-mcr.h \
- dietlibc/include/stdint.h dietlibc/include/limits.h ../../src/compiler.h \
- ../../src/arm-mcr.h ../../src/mutex.h
+ dietlibc/include/sys/stat.h ../../src/fio-ml.h dietlibc/include/errno.h
