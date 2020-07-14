@@ -1,1 +1,1 @@
-readme sd_uhs.c:(Stops warnings about summary tag missing)
+crop_rec.c:,sd_uhs.c:(5D3 reduce resolution anamorphic no ratio due to corruption, safe guard when mixing cf and sd cards sd patch)

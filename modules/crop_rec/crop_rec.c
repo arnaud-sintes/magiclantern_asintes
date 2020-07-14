@@ -1957,12 +1957,12 @@ static inline uint32_t reg_override_1x3(uint32_t reg, uint32_t old_val)
         case 0xC0F06804:
             return (set_25fps && ratios) ? 0x8d6011b + reg_6804_width + (reg_6804_height << 16):
         (set_25fps && !ratios) ? 0x8f8011b + reg_6804_width + (reg_6804_height << 16):
-        (!set_25fps && !ratios) ? 0x96c011b + reg_6804_width + (reg_6804_height << 16):
+        (!set_25fps && !ratios) ? 0x962011b + reg_6804_width + (reg_6804_height << 16):
         0x93a011b + reg_6804_width + (reg_6804_height << 16);
         case 0xC0F0713c:
             return (set_25fps && ratios) ? 0x8da + reg_713c:
         (set_25fps && !ratios) ? 0x8f8 + reg_713c:
-        (!set_25fps && !ratios) ? 0x96c + reg_713c:
+        (!set_25fps && !ratios) ? 0x962 + reg_713c:
         0x93e + reg_713c;
             
         case 0xC0F06014:

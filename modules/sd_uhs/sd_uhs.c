@@ -185,6 +185,12 @@ static struct menu_entry sd_uhs_menu1[] =
 
 static unsigned int sd_uhs_init()
 {
+    //needs turning off if possibly still on and suddenly only cf card present
+    if (!is_dir("B:/"))
+    {
+        sd_overclock = 0;
+    }
+    
     //needed with manual lenses cause it stalls liveview.
     while (is_movie_mode() && !lv && sd_overclock)
     {
@@ -245,10 +251,6 @@ static unsigned int sd_uhs_init()
     {
         menu_add("Debug", sd_uhs_menu, COUNT(sd_uhs_menu));
         menu_add("Movie", sd_uhs_menu1, COUNT(sd_uhs_menu1));
-    }
-    else
-    {
-        sd_overclock = 0;
     }
     
     return 0;
