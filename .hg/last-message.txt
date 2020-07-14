@@ -1,1 +1,1 @@
-crop_rec.c:(5D3 back to square one. Corruption otherwise)
+mlv_lite.c:(5d3 grayscale preview while recording all anamorphic modes)

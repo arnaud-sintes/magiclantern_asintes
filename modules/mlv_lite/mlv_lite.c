@@ -3022,12 +3022,6 @@ void init_mlv_chunk_headers(struct raw_info * raw_info)
         file_hdr[thread].videoFrameCount = 0; //autodetect
         file_hdr[thread].audioFrameCount = 0;
         file_hdr[thread].sourceFpsNom = fps_get_current_x1000();
-        /* 4k timelapse function in crop_rec.c */
-        if (cam_eos_m || cam_100d)
-        {
-            file_hdr[thread].sourceFpsNom = shamem_read(0xc0f0501c) == 0x20 ? 400: shamem_read(0xc0f0501c) == 0x21 ? 1000: shamem_read(0xc0f0501c) == 0x22 ? 2000: 
-                        shamem_read(0xc0f0501c) == 0x23 ? 3000: shamem_read(0xc0f0501c) == 0x24 ? 4000: shamem_read(0xc0f0501c) == 0x25 ? 5000: fps_get_current_x1000();
-        }
         file_hdr[thread].sourceFpsDenom = 1000;
     }
     memset(&rawi_hdr, 0, sizeof(mlv_rawi_hdr_t));
@@ -4419,7 +4413,7 @@ unsigned int raw_rec_update_preview(unsigned int ctx)
         -1,
         (need_for_speed) 
 	? RAW_PREVIEW_GRAY_ULTRA_FAST 
-	: (shamem_read(0xC0F06804) == 0x93a011b || shamem_read(0xC0F06804) == 0x8d6011b) && RAW_IS_RECORDING ? RAW_PREVIEW_GRAY_ULTRA_FAST /* 1x3 binning mode test */
+	: (shamem_read(0xC0F06804) == 0x93a011b || shamem_read(0xC0F06804) == 0x8d6011b || shamem_read(0xC0F06804) == 0x958011b || shamem_read(0xC0F06804) ==0x8f8011b) && RAW_IS_RECORDING ? RAW_PREVIEW_GRAY_ULTRA_FAST /* 1x3 binning mode test */
         : RAW_PREVIEW_COLOR_HALFRES
     );
     
