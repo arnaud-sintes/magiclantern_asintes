@@ -1,1 +1,1 @@
-mlv_lite.c:(5d3 more height reduction)
+crop_rec.c,mlv_lite.c:(5D3 1920x2350 seems ok with reg 713 slightly reduced)
