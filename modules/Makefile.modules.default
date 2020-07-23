@@ -11,3 +11,4 @@ ML_MODULES ?= \
 	ettr \
 	bench \
 	sd_uhs \
+	adtg_gui \

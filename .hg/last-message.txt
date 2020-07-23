@@ -1,1 +1,1 @@
-crop_rec.c,mlv_lite.c:(5D3 1920x2350 seems ok with reg 713 slightly reduced)
+makefile modules:(5d3 adding back adtg_gui)
