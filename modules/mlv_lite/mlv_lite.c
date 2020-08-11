@@ -4413,7 +4413,7 @@ unsigned int raw_rec_update_preview(unsigned int ctx)
         -1,
         (need_for_speed) 
 	? RAW_PREVIEW_GRAY_ULTRA_FAST 
-	: (shamem_read(0xC0F06804) == 0x93a011b || shamem_read(0xC0F06804) == 0x8d6011b || shamem_read(0xC0F06804) == 0x962011b || shamem_read(0xC0F06804) ==0x8f8011b) && RAW_IS_RECORDING ? RAW_PREVIEW_GRAY_ULTRA_FAST /* 1x3 binning mode test */
+	: (shamem_read(0xC0F06804) == 0x93a011b || shamem_read(0xC0F06804) == 0x8d6011b || shamem_read(0xC0F06804) == 0x962011b || shamem_read(0xC0F06804) == 0x8f8011b) && RAW_IS_RECORDING ? RAW_PREVIEW_GRAY_ULTRA_FAST /* 1x3 binning mode test */
         : RAW_PREVIEW_COLOR_HALFRES
     );
     
