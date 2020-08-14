@@ -1825,8 +1825,16 @@ static inline uint32_t reg_override_3K(uint32_t reg, uint32_t old_val)
     {
             /* raw resolution (end line/column) */
             /* X: (3072+140)/8 + 0x17, adjusted for 3072 in raw_rec */
+        //case 0xC0F06804:
+          //  return (old_val & 0xFFFF0000) + 0x1AA + (YRES_DELTA << 16);
+
+//changing 713c and 7150 for 24 fps mode. Rest stays the same. Couldn't get corruption.
         case 0xC0F06804:
-            return (old_val & 0xFFFF0000) + 0x1AA + (YRES_DELTA << 16);
+            return (video_mode_fps == 24) ? 0x7be01aa: (old_val & 0xFFFF0000) + 0x1AA + (YRES_DELTA << 16);
+        case 0xC0F0713c:
+            return (video_mode_fps == 24) ? 0x7be: old_val + YRES_DELTA + delta_head3;
+        case 0xC0F07150:
+            return (video_mode_fps == 24) ? 0x7bb: old_val + YRES_DELTA + delta_head4;
             
     }
     
