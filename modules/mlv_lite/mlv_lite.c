@@ -4497,6 +4497,13 @@ static unsigned int raw_rec_init()
             e->shidden = 1;
             pref_card = 0; /* Just to make sure */
         }
+
+//no sense to show this menu if no cf card included
+        if (is_dir("B:/") && !is_dir("A:/") && streq(e->name, "H.264 proxy") )
+        {
+            e->shidden = 1;
+            h264_proxy_menu = 0; /* Just to make sure */
+        }            
     }
 
     menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));

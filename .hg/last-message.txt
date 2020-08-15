@@ -1,1 +1,1 @@
-mlv_lite.c:(5D3 overriding preferred card CF SD possibility)
+mlv_lite.c:(5D3 disable h.264 proxy recording when only SD card)
