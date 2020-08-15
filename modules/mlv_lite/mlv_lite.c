@@ -144,6 +144,9 @@ static CONFIG_INT("raw.killgd", kill_gd, 0);
 static CONFIG_INT("raw.card_spanning", card_spanning, 0);
 #define MAX_WRITER_THREADS 2
 
+/* Preferred card */
+static CONFIG_INT("raw.pref_card", pref_card, 0);
+
 static CONFIG_INT("raw.res_x", resolution_index_x, 11);
 static CONFIG_INT("raw.res_x_fine", res_x_fine, 0);
 static CONFIG_INT("raw.aspect.ratio", aspect_ratio_index, 17);
@@ -2924,10 +2927,13 @@ static const char* get_cf_dcim_dir()
 {
     static char dcim_dir[FIO_MAX_PATH_LENGTH];
     struct card_info * card = get_shooting_card();
-    if (is_dir("A:/")) card = get_card(CARD_A);
+    if ((is_dir("A:/") && !pref_card) || card_spanning || h264_proxy_menu) card = get_card(CARD_A);
+    if (is_dir("A:/") && !card_spanning && !h264_proxy_menu && (pref_card == 1) && cam_dualcard) card = get_card(CARD_A);
+    if (is_dir("B:/") && !card_spanning && !h264_proxy_menu && (pref_card == 2) && cam_dualcard) card = get_card(CARD_B);
     snprintf(dcim_dir, sizeof(dcim_dir), "%s:/DCIM/%03d%s", card->drive_letter, card->folder_number, get_dcim_dir_suffix());
     return dcim_dir;
 }
+
 
 static char* get_next_raw_movie_file_name()
 {
@@ -3994,6 +4000,14 @@ static struct menu_entry raw_video_menu[] =
                 .help2 = "May increase performance.",
             },
             {
+                .name = "Preferred card",
+                .priv = &pref_card,
+                .max = 2,
+                .choices = CHOICES("OFF", "CF", "SD"),
+                .help  = "Select CF or SD card to record onto. Not working with Card spanning ON.",
+                .help2 = "Overrides the Pref Card settings menu.",
+            },
+            {
                 .name = "Kill global draw",
                 .priv = &kill_gd,
                 .max = 1,
@@ -4477,6 +4491,12 @@ static unsigned int raw_rec_init()
             e->shidden = 1;
             card_spanning = 0; /* Just to make sure */
         }
+
+        if (!cam_dualcard && streq(e->name, "Preferred card") )
+        {
+            e->shidden = 1;
+            pref_card = 0; /* Just to make sure */
+        }
     }
 
     menu_add("Movie", raw_video_menu, COUNT(raw_video_menu));
@@ -4537,6 +4557,7 @@ MODULE_CBRS_END()
 MODULE_CONFIGS_START()
     MODULE_CONFIG(kill_gd)
     MODULE_CONFIG(card_spanning)
+    MODULE_CONFIG(pref_card)
     MODULE_CONFIG(raw_video_enabled)
     MODULE_CONFIG(resolution_index_x)
     MODULE_CONFIG(res_x_fine)    
