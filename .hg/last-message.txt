@@ -1,1 +1,1 @@
-crop_rec.c:(5D3 expanding height in x5 zoom mode to 1730)
+crop_rec.c:(5D3 expanding width. will need some deeper analysis)
