@@ -1,1 +1,1 @@
-mlv_lite.c:(5D3 disable h.264 proxy recording when only SD card)
+crop_rec.c:(5D3 expanding height in x5 zoom mode to 1730)

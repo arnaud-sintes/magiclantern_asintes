@@ -681,7 +681,7 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 
                 /* raw buffer centered in zoom mode */
             case CROP_PRESET_CENTER_Z:
-                cmos_new[1] = PACK12(9+2,42+1); /* vertical (first|last) */
+                cmos_new[1] = PACK12(13,14); /* vertical (first|last) */
                 cmos_new[2] = 0x09E;            /* horizontal offset (mask 0xFF0) */
                 break;
         }
@@ -2061,6 +2061,17 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
     (video_mode_fps == 50) ? 1875 :
     (video_mode_fps == 60) ? 1540 :
     -1 ;
+    
+    
+    switch (reg)
+    {
+        case 0xC0F06804:
+            return (video_mode_fps == 25) ?  0x6ba01EB + reg_6804_width + (reg_6804_height << 16): 0x70001EB + reg_6804_width + (reg_6804_height << 16);
+            
+        case 0xC0F0713c:
+            return (video_mode_fps == 25) ? 0x6ba + reg_713c: 0x700 + reg_713c;
+    }
+     
     
     return reg_override_fps_nocheck(reg, timerA, timerB, old_val);
 }
