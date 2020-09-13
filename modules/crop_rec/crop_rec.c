@@ -130,7 +130,7 @@ static const char crop_choices_help2_5d3[] =
 "\n"
 "1x3 binning anamorphic\n"
 "1:1 3K crop (3072x1920 @ 24p, square raw pixels, preview broken)\n"
-"1:1 3.3K crop (3280x1846 @ 24p, x5 cropped realtime preview)\n"
+"1:1 3.3K crop (3264x1836 @ 24p, x5 cropped realtime preview)\n"
 "1:1 sensor readout (square raw pixels, 3x crop, good preview in 1080p)\n"
 "1:1 readout in x5 zoom mode (centered raw, high res, cropped preview)\n"
 "1920x1080 @ 45p, 3x3 binning (50/60 FPS in Canon menu)\n"
@@ -2096,15 +2096,15 @@ static inline uint32_t reg_override_zoom_fps_33k(uint32_t reg, uint32_t old_val)
     // experimenting with expanding width and real time preview
             EngDrvOutLV(0xc0f383d4, 0x81448145 + reg_83d4);
             EngDrvOutLV(0xc0f383dc, 0x845c8270 + reg_83dc);
-            EngDrvOutLV(0xC0F38024, 0x563035b + reg_8024);
+            EngDrvOutLV(0xC0F38024, 0x5630357 + reg_8024);
         
     switch (reg)
     {
         case 0xC0F06804:
-            return 0x77401c5 + reg_6804_width + (reg_6804_height << 16);
+            return 0x76a01c3 + reg_6804_width + (reg_6804_height << 16);
 
         case 0xC0F0713c:
-            return 0x774 + reg_713c;
+            return 0x76a + reg_713c;
     }
     
     return reg_override_fps_nocheck(reg, timerA, timerB, old_val);
