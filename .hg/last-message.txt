@@ -1,1 +1,1 @@
-crop_rec.c:(5D3 expanding width. will need some deeper analysis)
+crop_rec.c:(5D3 preparing 3.3k 3296x1854 preset, realtime cropped preview)

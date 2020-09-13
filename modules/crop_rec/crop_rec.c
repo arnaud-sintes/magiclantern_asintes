@@ -683,6 +683,8 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 /* raw buffer centered in zoom mode */
             case CROP_PRESET_CENTER_Z:
                 cmos_new[1] = PACK12(13,14); /* vertical (first|last) */
+            //cmos_new[1] = PACK12(12,14); /* vertical (first|last) */ Needed for the 3.3k preset
+
                 cmos_new[2] = 0x09E;            /* horizontal offset (mask 0xFF0) */
                 break;
         }
@@ -2063,16 +2065,6 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
     (video_mode_fps == 60) ? 1540 :
     -1 ;
     
-    
-    /* experimenting with expanding width and real time preview
-            EngDrvOutLV(0xc0f383d4, 0x81448145 + reg_83d4);
-            EngDrvOutLV(0xc0f383dc, 0x845c8270 + reg_83dc);
-            EngDrvOutLV(0xC0F38024, 0x56303a7 + 30 + reg_8024);
-    
-    case 0xC0F06804:
-        return (video_mode_fps == 25) ?  0x6ba01fa + reg_6804_width + (reg_6804_height << 16): 0x70001fa + reg_6804_width + (reg_6804_height << 16);
-     */
-        
     switch (reg)
     {
         case 0xC0F06804:
@@ -2082,9 +2074,34 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
             return (video_mode_fps == 25) ? 0x6ba + reg_713c: 0x700 + reg_713c;
     }
      
+    return reg_override_fps_nocheck(reg, timerA, timerB, old_val);
+}
+
+/* 3.3K 3296x1854 16:9 Let´s make a preset later on
+ //cmos_new[1] = PACK12(12,14); Needed for the 3.3k preset
+static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
+{
+    // attempt to reconfigure the x5 zoom at the FPS selected in Canon menu
+    int timerA = 480 + reg_6008;
+    int timerB = 2085 + reg_6014;
+    
+    // experimenting with expanding width and real time preview
+            EngDrvOutLV(0xc0f383d4, 0x81448145 + reg_83d4);
+            EngDrvOutLV(0xc0f383dc, 0x845c8270 + reg_83dc);
+            EngDrvOutLV(0xC0F38024, 0x563035f + reg_8024);
+        
+    switch (reg)
+    {
+        case 0xC0F06804:
+            return 0x77c01c7 + reg_6804_width + (reg_6804_height << 16);
+
+        case 0xC0F0713c:
+            return 0x77c + reg_713c;
+    }
     
     return reg_override_fps_nocheck(reg, timerA, timerB, old_val);
 }
+*/
 
 static int engio_vidmode_ok = 0;
 
