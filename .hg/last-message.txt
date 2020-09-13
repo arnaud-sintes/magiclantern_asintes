@@ -1,1 +1,1 @@
-crop_rec.c:(5D3 preparing 3.3k 3296x1854 preset, realtime cropped preview)
+crop_rec.c:(5D3 3.3k preset 3296x1854)

@@ -29,7 +29,7 @@ static CONFIG_INT("crop.preset", crop_preset_index, 1);
 static CONFIG_INT("crop.shutter_range", shutter_range, 0);
 static CONFIG_INT("crop.ratios", ratios, 1);
 static CONFIG_INT("crop.x3crop", x3crop, 0);
-static CONFIG_INT("crop.zoomaid", zoomaid, 1);
+static CONFIG_INT("crop.zoomaid", zoomaid, 0);
 static CONFIG_INT("crop.set_25fps", set_25fps, 0);
 static CONFIG_INT("crop.framestop", framestop, 0);
 static CONFIG_INT("crop.frameburst", frameburst, 0);
@@ -47,6 +47,7 @@ CONFIG_INT("crop.bitdepth", bitdepth, 4); /* non static or it can´t be read in 
 enum crop_preset {
     CROP_PRESET_OFF = 0,
     CROP_PRESET_3X,
+    CROP_PRESET_33K,
     CROP_PRESET_3X_TALL,
     CROP_PRESET_3K,
     CROP_PRESET_4K_HFPS,
@@ -82,6 +83,7 @@ static enum crop_preset crop_presets_5d3[] = {
     CROP_PRESET_OFF,
     CROP_PRESET_1x3,
     CROP_PRESET_3K,
+    CROP_PRESET_33K,
     CROP_PRESET_3X,
     CROP_PRESET_CENTER_Z,
     CROP_PRESET_3x3_1X_45p,
@@ -103,6 +105,7 @@ static const char * crop_choices_5d3[] = {
     "OFF",
     "anamorphic",
     "3K 1:1",
+    "3.3K 1:1 x5",
     "1920 1:1",
     "3.5K 1:1 centered x5",
     "1080p 45fps",
@@ -127,6 +130,7 @@ static const char crop_choices_help2_5d3[] =
 "\n"
 "1x3 binning anamorphic\n"
 "1:1 3K crop (3072x1920 @ 24p, square raw pixels, preview broken)\n"
+"1:1 3.3K crop (3296x1854 @ 24p, x5 cropped realtime preview)\n"
 "1:1 sensor readout (square raw pixels, 3x crop, good preview in 1080p)\n"
 "1:1 readout in x5 zoom mode (centered raw, high res, cropped preview)\n"
 "1920x1080 @ 45p, 3x3 binning (50/60 FPS in Canon menu)\n"
@@ -190,6 +194,7 @@ static int is_supported_mode()
             /* note: zoom check is also covered by check_cmos_vidmode */
             /* (we need to apply CMOS settings before PROP_LV_DISPSIZE fires) */
         case CROP_PRESET_CENTER_Z:
+        case CROP_PRESET_33K:
             return 1;
             break;
             
@@ -485,6 +490,7 @@ static int FAST check_cmos_vidmode(uint16_t* data_buf)
                 switch (crop_preset)
                 {
                     case CROP_PRESET_CENTER_Z:
+                    case CROP_PRESET_33K:
                     {
                         /* detecting the zoom mode is tricky;
                          * let's just exclude 1080p and 720p for now ... */
@@ -683,10 +689,14 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 /* raw buffer centered in zoom mode */
             case CROP_PRESET_CENTER_Z:
                 cmos_new[1] = PACK12(13,14); /* vertical (first|last) */
-            //cmos_new[1] = PACK12(12,14); /* vertical (first|last) */ Needed for the 3.3k preset
-
                 cmos_new[2] = 0x09E;            /* horizontal offset (mask 0xFF0) */
                 break;
+            
+            case CROP_PRESET_33K:
+                cmos_new[1] = PACK12(12,14); /* vertical (first|last) */
+                cmos_new[2] = 0x09E;            /* horizontal offset (mask 0xFF0) */
+                break;
+                
         }
     }
     
@@ -1176,8 +1186,8 @@ static void FAST adtg_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         if (is_5D3)
         {
             /* FIXME: remove this kind of hardcoded conditions */
-            if ((crop_preset == CROP_PRESET_CENTER_Z && lv_dispsize != 1) ||
-                (crop_preset != CROP_PRESET_CENTER_Z && lv_dispsize == 1))
+            if (((crop_preset == CROP_PRESET_CENTER_Z || crop_preset == CROP_PRESET_33K) && lv_dispsize != 1) ||
+                ((crop_preset != CROP_PRESET_CENTER_Z && crop_preset != CROP_PRESET_33K) && lv_dispsize == 1))
             {
                 shutter_blanking = adjust_shutter_blanking(shutter_blanking);
             }
@@ -1398,7 +1408,7 @@ static inline uint32_t reg_override_bits(uint32_t reg, uint32_t old_val)
     if (RECORDING && is_5D3 && bitdepth)
     {
         /* compensates for black level issues with analog gain. Used for both 10 and 12 bit */
-        if (CROP_PRESET_MENU != CROP_PRESET_CENTER_Z) *(volatile uint32_t*)0xC0F08560 = 0x7f6;
+        if (CROP_PRESET_MENU != CROP_PRESET_CENTER_Z && CROP_PRESET_MENU != CROP_PRESET_33K) *(volatile uint32_t*)0xC0F08560 = 0x7f6;
         
         if (OUTPUT_8BIT)
         {
@@ -2077,11 +2087,9 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
     return reg_override_fps_nocheck(reg, timerA, timerB, old_val);
 }
 
-/* 3.3K 3296x1854 16:9 Let´s make a preset later on
- //cmos_new[1] = PACK12(12,14); Needed for the 3.3k preset
-static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
+
+static inline uint32_t reg_override_zoom_fps_33k(uint32_t reg, uint32_t old_val)
 {
-    // attempt to reconfigure the x5 zoom at the FPS selected in Canon menu
     int timerA = 480 + reg_6008;
     int timerB = 2085 + reg_6014;
     
@@ -2101,7 +2109,6 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
     
     return reg_override_fps_nocheck(reg, timerA, timerB, old_val);
 }
-*/
 
 static int engio_vidmode_ok = 0;
 
@@ -2120,6 +2127,7 @@ static void * get_engio_reg_override_func()
     (crop_preset == CROP_PRESET_40_FPS)     ? reg_override_40_fps     :
     (crop_preset == CROP_PRESET_FULLRES_LV) ? reg_override_fullres_lv :
     (crop_preset == CROP_PRESET_CENTER_Z)   ? reg_override_zoom_fps   :
+    (crop_preset == CROP_PRESET_33K)        ? reg_override_zoom_fps_33k   :
     (crop_preset == CROP_PRESET_1x3)        ? reg_override_1x3 :
     (crop_preset == CROP_PRESET_anamorph_fullres)  ? reg_override_anamorph_fullres :
     (crop_preset == CROP_PRESET_mv1080_mv720p)    ? reg_override_mv1080_mv720p  :
@@ -2147,7 +2155,7 @@ static void FAST engio_write_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
         {
             if (is_5D3)
             {
-                engio_vidmode_ok = (crop_preset == CROP_PRESET_CENTER_Z)
+                engio_vidmode_ok = (crop_preset == CROP_PRESET_CENTER_Z || crop_preset == CROP_PRESET_33K)
                 ? (old == 0x56601EB)                        /* x5 zoom */
                 : (old == 0x528011B || old == 0x2B6011B);   /* 1080p or 720p */
             }
@@ -2232,7 +2240,7 @@ static MENU_UPDATE_FUNC(crop_update)
 {
     if (CROP_PRESET_MENU && lv)
     {
-        if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z)
+        if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z || CROP_PRESET_MENU ==  CROP_PRESET_33K)
         {
             if (lv_dispsize == 1)
             {
@@ -2845,7 +2853,7 @@ static int crop_rec_needs_lv_refresh()
     if (!is_movie_mode()) return 0;
     
     /* let´s automate liveview start off setting */
-    if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z)
+    if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z || CROP_PRESET_MENU ==  CROP_PRESET_33K)
     {
         info_led_on();
         gui_uilock(UILOCK_EVERYTHING);
@@ -3081,7 +3089,7 @@ if (CROP_PRESET_MENU == CROP_PRESET_1x3 || CROP_PRESET_MENU == CROP_PRESET_anamo
         lv_dirty = 0;
     }
     
-    if (crop_preset == CROP_PRESET_CENTER_Z &&
+    if ((crop_preset == CROP_PRESET_CENTER_Z || crop_preset ==  CROP_PRESET_33K) &&
         (lv_dispsize == 5 || lv_dispsize == 10))
     {
         center_canon_preview();
@@ -3147,7 +3155,7 @@ if (CROP_PRESET_MENU == CROP_PRESET_1x3 || CROP_PRESET_MENU == CROP_PRESET_anamo
     
     if (zoomaid) crop_patch = 0; //disable patch while off
     
-    if (CROP_PRESET_MENU == CROP_PRESET_CENTER_Z && lv_dispsize == 1)
+    if ((CROP_PRESET_MENU == CROP_PRESET_CENTER_Z || CROP_PRESET_MENU ==  CROP_PRESET_33K) && lv_dispsize == 1)
     {
         info_led_on();
         gui_uilock(UILOCK_EVERYTHING);
@@ -3175,6 +3183,10 @@ static LVINFO_UPDATE_FUNC(crop_info)
                 case CROP_PRESET_CENTER_Z:
                     snprintf(buffer, sizeof(buffer), "3.5K");
                     break;
+                    
+                    case CROP_PRESET_33K:
+                        snprintf(buffer, sizeof(buffer), "3.3K");
+                        break;
             }
         }
     }
