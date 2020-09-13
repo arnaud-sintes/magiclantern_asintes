@@ -1,1 +1,1 @@
-crop_rec.c:(5D3 3.3k preset 3296x1854)
+crop_rec.c:(5D3 slight height reduction to 3.3k preset)
