@@ -1,1 +1,1 @@
-crop_rec.c:(5D3 reducing height a little more 3.3k)
+sd_uhs.c:(5D3 change raw video enable,disable routines more correctly)

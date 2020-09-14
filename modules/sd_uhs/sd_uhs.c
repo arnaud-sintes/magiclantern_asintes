@@ -7,11 +7,13 @@
 #include <patch.h>
 #include <console.h>
 #include <config.h>
+#include "raw.h"
 
 #include <lens.h>
 
 /* camera-specific parameters */
 static int valid = 0;
+static int rawvid = 0;
 static uint32_t sd_enable_18V = 0;
 static uint32_t sd_setup_mode = 0;
 static uint32_t sd_setup_mode_in = 0;
@@ -144,7 +146,7 @@ static void sd_overclock_task()
     if (valid)
     {
         NotifyBox(1000, "patching done!");
-        if (is_movie_mode()) menu_set_str_value_from_script("Movie", "RAW video", "ON", 1);
+        if (rawvid) menu_set_str_value_from_script("Movie", "RAW video", "ON", 1);
         msleep(100);
     }
 
@@ -216,7 +218,11 @@ static unsigned int sd_uhs_init()
             if (!gui_menu_shown() )
             {
                 valid = 1;
-                menu_set_str_value_from_script("Movie", "RAW video", "OFF", 1);
+                if (raw_lv_is_enabled())
+                {
+                    rawvid = 1;
+                    menu_set_str_value_from_script("Movie", "RAW video", "OFF", 1);
+                }
                 msleep(800);
             }
 
@@ -238,7 +244,11 @@ static unsigned int sd_uhs_init()
             if (!gui_menu_shown())
             {
                 valid = 1;
-                menu_set_str_value_from_script("Movie", "RAW video", "OFF", 1);
+                if (raw_lv_is_enabled())
+                {
+                    rawvid = 1;
+                    menu_set_str_value_from_script("Movie", "RAW video", "OFF", 1);
+                }
                 msleep(800);
             }
             sd_overclock_task();
