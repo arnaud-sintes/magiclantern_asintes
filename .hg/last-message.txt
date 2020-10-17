@@ -1,1 +1,1 @@
-sd_uhs.c:(5D3 change raw video enable,disable routines more correctly)
+crop_rec.c:(5DIII 38fps preset mv1080p)

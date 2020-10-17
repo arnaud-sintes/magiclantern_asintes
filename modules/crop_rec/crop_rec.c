@@ -116,7 +116,7 @@ static const char * crop_choices_5d3[] = {
     "4K 1:1 half-fps",
     "Full-res LiveView",
     "anamorphic fullres",
-    "mv1080p_mv720p",
+    "mv1080p 38fps",
     //"1920 1:1 tall",
     //"1x3 binning",
     //"3x1 binning",      /* doesn't work well */
@@ -141,7 +141,7 @@ static const char crop_choices_help2_5d3[] =
 "1:1 4K crop (4096x3072 @ 12.5 fps, half frame rate, preview broken)\n"
 "Full resolution LiveView (5796x3870 @ 7.4 fps, 5784x3864, preview broken)\n"
 "anamorphic fullres 1920x3760 (extreme anamorphic)\n"
-"mv1080_mv720p clean\n"
+"mv1080 regular real time preview\n"
 "1x3 binning: read all lines, bin every 3 columns (extreme anamorphic)\n"
 "1:1 crop, higher vertical resolution (1920x1920 @ 24p, cropped preview)\n"
 //"3x1 binning: bin every 3 lines, read all columns (extreme anamorphic)\n"
@@ -2022,6 +2022,22 @@ static inline uint32_t reg_override_anamorph_fullres(uint32_t reg, uint32_t old_
 
 static inline uint32_t reg_override_mv1080_mv720p(uint32_t reg, uint32_t old_val)
 {
+    
+    switch (reg)
+    {
+        case 0xC0F06014: return 0x632 + reg_6014;
+        case 0xC0F0600c: return 0x18d018d + reg_6008 + (reg_6008 << 16);
+        case 0xC0F06008: return 0x18d018d + reg_6008 + (reg_6008 << 16);
+        case 0xC0F06010: return 0x18d + reg_6008;
+            
+        case 0xC0F0713c: return 0x55e + reg_713c;
+        case 0xC0F07150: return 0x527 + reg_7150;
+    }
+    return reg_override_bits(reg, old_val);
+}
+
+static inline uint32_t reg_override_x3(uint32_t reg, uint32_t old_val)
+{
     return reg_override_bits(reg, old_val);
 }
 
@@ -2115,7 +2131,7 @@ static int engio_vidmode_ok = 0;
 static void * get_engio_reg_override_func()
 {
     uint32_t (*reg_override_func)(uint32_t, uint32_t) =
-    (crop_preset == CROP_PRESET_3X)         ? reg_override_mv1080_mv720p     : /* fixme: corrupted image */
+    (crop_preset == CROP_PRESET_3X)         ? reg_override_x3     : /* fixme: corrupted image */
     (crop_preset == CROP_PRESET_3X_TALL)    ? reg_override_3X_tall    :
     (crop_preset == CROP_PRESET_3x3_1X_50p)     ? reg_override_3x3_50p   :
     (crop_preset == CROP_PRESET_3x3_1X_60p)     ? reg_override_3x3_60p   :
