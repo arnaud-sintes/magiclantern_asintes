@@ -1,1 +1,1 @@
-crop_rec.c:(5D3,centered 3.5k preset)
+crop_rec.c:(5d3 centering both 3.3 and 3.5k)
