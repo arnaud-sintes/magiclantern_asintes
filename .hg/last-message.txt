@@ -1,1 +1,1 @@
-crop_rec.c:(5DIII 38fps preset mv1080p)
+crop_rec.c:(5D3,centered 3.5k preset)

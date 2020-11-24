@@ -688,7 +688,7 @@ static void FAST cmos_hook(uint32_t* regs, uint32_t* stack, uint32_t pc)
                 
                 /* raw buffer centered in zoom mode */
             case CROP_PRESET_CENTER_Z:
-                cmos_new[1] = PACK12(13,14); /* vertical (first|last) */
+                cmos_new[1] = PACK12(5,10); /* vertical (first|last) */
                 cmos_new[2] = 0x09E;            /* horizontal offset (mask 0xFF0) */
                 break;
             
