@@ -154,3 +154,6 @@
 
 /** Hide Canon bottom bar from DebugMsg hook */
 #define CONFIG_LVAPP_HACK_DEBUGMSG
+
+//Kill canon gui elements. Good especially for x5 zoom presets
+#define CONFIG_KILL_FLICKER
