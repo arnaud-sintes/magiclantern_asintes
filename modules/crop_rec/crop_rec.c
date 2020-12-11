@@ -2106,8 +2106,8 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
 
 static inline uint32_t reg_override_zoom_fps_33k(uint32_t reg, uint32_t old_val)
 {
-    int timerA = 480 + reg_6008;
-    int timerB = 2085 + reg_6014;
+    int timerA = 472 + reg_6008;
+    int timerB = 2121 + reg_6014;
     
     // experimenting with expanding width and real time preview
             EngDrvOutLV(0xc0f383d4, 0x81448145 + reg_83d4);
