@@ -1,1 +1,1 @@
-crop_rec.c:(5DIII refining timers 3.3K preset)
+crop_rec.c:(5D3 centering 3.5k preset according to winmediacenter)
