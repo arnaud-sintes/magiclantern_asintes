@@ -1,1 +1,1 @@
-crop_rec.c:(5D3 centering 3.5k preset according to winmediacenter)
+crop_rec.c,mlv_lite.c:(5DIII Turning off movie tab bitdepth when crop rec is disabled)

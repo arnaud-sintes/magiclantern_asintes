@@ -25,7 +25,8 @@ static int is_digic4 = 0;
 static int is_digic5 = 0;
 static int is_5D3 = 0;
 
-static CONFIG_INT("crop.preset", crop_preset_index, 1);
+//Not static so we can get info in mlv_lite regarding crop rec on or off
+CONFIG_INT("crop.preset", crop_preset_index, 1);
 static CONFIG_INT("crop.shutter_range", shutter_range, 0);
 static CONFIG_INT("crop.ratios", ratios, 1);
 static CONFIG_INT("crop.x3crop", x3crop, 0);
@@ -2780,7 +2781,8 @@ static struct menu_entry bitdepth_menu[] =
     .priv   = &bitdepth,
     .max    = 4,
     .choices = CHOICES("OFF", "8 bit", "9 bit", "10 bit", "12 bit"),
-    .help   = "Alter bitdepth\n"
+    .help   = "Alter bitdepth\n",
+    .help2  = "Not active when crop rec set to OFF\n"
     },
 };
 
@@ -2998,6 +3000,12 @@ static void iso()
 /* when closing ML menu, check whether we need to refresh the LiveView */
 static unsigned int crop_rec_polling_cbr(unsigned int unused)
 {
+    if (CROP_PRESET_MENU == CROP_PRESET_OFF && bitdepth)
+    {
+        bitdepth = 0;
+        NotifyBox(3000, "Movie tab bitdepth reset when crop rec OFF");
+    }
+    
     
     /* refresh canon menu iso while not recording. Caveat. Flicker but better than nothong */
     if (isoclimb && is_movie_mode())

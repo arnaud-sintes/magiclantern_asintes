@@ -134,6 +134,10 @@ extern int WEAK_FUNC(bits) bitdepth;
 #define OUTPUT_10BIT (bitdepth == 3)
 #define OUTPUT_12BIT (bitdepth == 4)
 
+//dummy enabler. Will disable whitelevel routines from crop rec if set to OFF
+static int crop_presets = 0; /* coming from crop_rec.c */
+extern int WEAK_FUNC(crop_presets) crop_preset_index;
+
 static int isoau = 0; /* coming from crop_rec.c */
 extern int WEAK_FUNC(isoau) isoauto;
 
@@ -2083,7 +2087,7 @@ else
 	NotifyBox(5000, "shamem_read(0xc0f383dc) 0x%x", shamem_read(0xc0f383dc));
 }
 */
-    
+        
     if (RAW_IS_RECORDING && PREVIEW_HACKED && frame_count == 0)
     {
         for (int channel = 0; channel < 32; channel++)
@@ -3070,15 +3074,15 @@ void init_mlv_chunk_headers(struct raw_info * raw_info)
 if (cam_5d3_113 || cam_5d3_123)
 {
 /* 8bit */
-    if (OUTPUT_8BIT) rawi_hdr.raw_info.white_level = 2250;
+    if (OUTPUT_8BIT && crop_preset_index) rawi_hdr.raw_info.white_level = 2250;
 /* 9bit */
-    if (OUTPUT_9BIT) rawi_hdr.raw_info.white_level = 2550;
+    if (OUTPUT_9BIT && crop_preset_index) rawi_hdr.raw_info.white_level = 2550;
 /* 10bit */
-    if (OUTPUT_10BIT) rawi_hdr.raw_info.white_level = (lens_info.raw_iso == ISO_100) ? 2840 : 2890;
+    if (OUTPUT_10BIT && crop_preset_index) rawi_hdr.raw_info.white_level = (lens_info.raw_iso == ISO_100) ? 2840 : 2890;
 /* 12bit */
-    if (OUTPUT_12BIT) rawi_hdr.raw_info.white_level = 6000;
+    if (OUTPUT_12BIT && crop_preset_index) rawi_hdr.raw_info.white_level = 6000;
 /* 14bit */
-    if (!bitdepth) rawi_hdr.raw_info.white_level = 16200;
+    if (!bitdepth && crop_preset_index) rawi_hdr.raw_info.white_level = 16200;
 
 /* Set corrected iso when selected max iso preset in crop_rec.c */
     if (lens_info.raw_iso == 0x0) 
