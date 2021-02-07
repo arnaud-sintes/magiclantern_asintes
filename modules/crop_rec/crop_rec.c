@@ -3000,7 +3000,7 @@ static void iso()
 /* when closing ML menu, check whether we need to refresh the LiveView */
 static unsigned int crop_rec_polling_cbr(unsigned int unused)
 {
-    if (CROP_PRESET_MENU == CROP_PRESET_OFF && bitdepth)
+    if (CROP_PRESET_MENU == CROP_PRESET_OFF && bitdepth && !gui_menu_shown())
     {
         bitdepth = 0;
         NotifyBox(3000, "Movie tab bitdepth reset when crop rec OFF");
