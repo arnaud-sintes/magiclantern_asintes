@@ -1,1 +1,1 @@
-crop_rec.c:(5DIII better to apply changes when leaving menu)
+crop_rec.c:(5D3 zoomaid fix 3.3k mode)

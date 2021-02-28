@@ -188,7 +188,7 @@ static int is_supported_mode()
     /* workaround getting below cams working with focus aid */
     static int last_hs_aid = 0;
     if (!get_halfshutter_pressed()) last_hs_aid = get_ms_clock();
-    if (get_ms_clock() - last_hs_aid > 300 && get_halfshutter_pressed() && is_5D3 && !RECORDING && (zoomaid == 0x1 || zoomaid == 0x2)) return 0;
+    if (get_ms_clock() - last_hs_aid > 300 && get_halfshutter_pressed() && is_5D3 && !RECORDING && CROP_PRESET_MENU != CROP_PRESET_33K && (zoomaid == 0x1 || zoomaid == 0x2)) return 0;
     
     switch (crop_preset)
     {
