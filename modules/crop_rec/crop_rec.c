@@ -2095,10 +2095,10 @@ static inline uint32_t reg_override_zoom_fps(uint32_t reg, uint32_t old_val)
     switch (reg)
     {
         case 0xC0F06804:
-            return (video_mode_fps == 25) ?  0x6ba01eb + reg_6804_width + (reg_6804_height << 16): 0x70001eb + reg_6804_width + (reg_6804_height << 16);
+            return (video_mode_fps == 25) ?  0x6b001eb + reg_6804_width + (reg_6804_height << 16): 0x70001eb + reg_6804_width + (reg_6804_height << 16);
             
         case 0xC0F0713c:
-            return (video_mode_fps == 25) ? 0x6ba + reg_713c: 0x700 + reg_713c;
+            return (video_mode_fps == 25) ? 0x6b0 + reg_713c: 0x700 + reg_713c;
     }
      
     return reg_override_fps_nocheck(reg, timerA, timerB, old_val);

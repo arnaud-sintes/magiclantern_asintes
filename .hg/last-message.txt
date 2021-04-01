@@ -1,1 +1,1 @@
-crop_rec.c:(5d3 fix for shutter 3.3k preset)
+crop_rec.c:(5D3 reducing 3.5 height by 10 to reduce corrupted frames)
