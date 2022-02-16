@@ -117,7 +117,7 @@ static const char * crop_choices_5d3[] = {
     "4K 1:1 half-fps",
     "Full-res LiveView",
     "anamorphic fullres",
-    "mv1080p 38fps",
+    "mv1080p 40fps",
     //"1920 1:1 tall",
     //"1x3 binning",
     //"3x1 binning",      /* doesn't work well */
@@ -2026,13 +2026,13 @@ static inline uint32_t reg_override_mv1080_mv720p(uint32_t reg, uint32_t old_val
     
     switch (reg)
     {
-        case 0xC0F06014: return 0x632 + reg_6014;
+        case 0xC0F06014: return 0x5e3 + reg_6014;
         case 0xC0F0600c: return 0x18d018d + reg_6008 + (reg_6008 << 16);
         case 0xC0F06008: return 0x18d018d + reg_6008 + (reg_6008 << 16);
         case 0xC0F06010: return 0x18d + reg_6008;
             
-        case 0xC0F0713c: return 0x55e + reg_713c;
-        case 0xC0F07150: return 0x527 + reg_7150;
+        case 0xC0F0713c: return 0x522 + reg_713c;
+        case 0xC0F07150: return 0x4c3 + reg_7150;
     }
     return reg_override_bits(reg, old_val);
 }
