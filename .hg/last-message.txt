@@ -1,1 +1,1 @@
-crop_rec.c:(revert to 38fps. 40 not stable)
+crop_rec.c:(40fps mode)
