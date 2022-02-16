@@ -1,1 +1,1 @@
-crop_rec.c(increase to 40fps from 38)
+crop_rec.c:(revert to 38fps. 40 not stable)
