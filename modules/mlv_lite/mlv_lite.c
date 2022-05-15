@@ -184,6 +184,8 @@ static CONFIG_INT("raw.preview", preview_mode, 2);
 static CONFIG_INT("raw.warm.up", warm_up, 0);
 static CONFIG_INT("raw.use.srm.memory", use_srm_memory, 1);
 static CONFIG_INT("raw.small.hacks", small_hacks, 1);
+static CONFIG_INT("raw.more.hacks", more_hacks, 1);
+static CONFIG_INT("raw.one.more.hack", one_more_hack, 0);
 
 static CONFIG_INT("raw.h264.proxy", h264_proxy_menu, 0);
 static CONFIG_INT("raw.sync_beep", sync_beep, 1);
@@ -2191,6 +2193,43 @@ void hack_liveview(int unhack)
 }
 
 static REQUIRES(LiveViewTask) FAST
+void hack_liveview_more()
+{
+    if (more_hacks && shamem_read(0xc0f383d4) != 0x4f0010) /* excludes mcm mode on eosm */
+    {
+        void (*aewbSuspend)() =
+        cam_eos_m ? 0xff2606f4 :
+        cam_5d3_113 ? 0xff23bc60 :
+        cam_5d3_123 ? 0xff23ff10 :
+        0;
+        
+        void (*lvfaceEnd)() =
+        cam_eos_m ? 0xff177ff8 :
+        cam_5d3_113 ? 0xff16d77c :
+        cam_5d3_123 ? 0xff16e318 :
+        0;
+        
+        lvfaceEnd();
+        
+        if (more_hacks == 2)
+        {
+            aewbSuspend();
+        }
+    }
+    
+// Causes freeze on eosm
+    if (one_more_hack)
+    {
+        void (*CartridgeCancel)() =
+        cam_eos_m ? 0xffa7e7d8 :
+        cam_5d3_113 ? 0xff17fd68 :
+        cam_5d3_123 ? 0xff181340 :
+        0;
+        CartridgeCancel();
+        msleep(40);
+    }
+}
+
 int choose_next_capture_slot()
 {
     /* keep on rolling? */
@@ -4089,6 +4128,23 @@ static struct menu_entry raw_video_menu[] =
                 .advanced = 1,
             },
             {
+                    .name = "More hacks",
+                    .priv = &more_hacks,
+            .choices = CHOICES("OFF", "lvface", "lvface + aewb"),
+                    .max = 2,
+                    .help  = "Disable lvface and aewb.",
+            .help2 = "aewb: locks wb and shutter! Disables shutter fine-tuning!",
+                    .advanced = 1,
+            },
+            {
+                    .name = "One more hack",
+                    .priv = &one_more_hack,
+            .choices = CHOICES("OFF", "ON"),
+                    .max = 1,
+                    .help  = "CartridgeCancel.",
+                    .advanced = 1,
+            },
+            {
                 .name = "Show graph",
                 .priv = &show_graph,
                 .choices = CHOICES("OFF", "Buffers", "Buffer usage"),
@@ -4582,6 +4638,8 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(prevmode)
     MODULE_CONFIG(use_srm_memory)
     MODULE_CONFIG(small_hacks)
+    MODULE_CONFIG(more_hacks)
+    MODULE_CONFIG(one_more_hack)
     MODULE_CONFIG(warm_up)
     MODULE_CONFIG(sync_beep)
     MODULE_CONFIG(output_format)
