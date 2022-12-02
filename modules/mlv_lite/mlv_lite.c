@@ -3452,6 +3452,7 @@ void raw_video_rec_task(uint32_t thread)
         
         hack_liveview(0);
         liveview_hacked = 1;
+        hack_liveview_more();
 
         /* try a sync beep (not very precise, but better than nothing) */
         if(sync_beep)
