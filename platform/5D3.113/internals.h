@@ -97,7 +97,7 @@
 //~ #define CONFIG_WB_WORKAROUND
 
 /** We ca restore ML files after formatting the card in the camera **/
-//#define CONFIG_RESTORE_AFTER_FORMAT //pausing due to conflict with sd_uhs patching
+#define CONFIG_RESTORE_AFTER_FORMAT 
 
 /** We know how to use DMA_MEMCPY, though I don't see any reason for doing so **/
 /** it's not really faster than plain memcpy, and the side effects are not yet fully understood **/
