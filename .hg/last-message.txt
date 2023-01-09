@@ -1,1 +1,1 @@
-internals.h:(putting back CONFIG_RESTORE_AFTER_FORMAT)
+mlv_lite.c:(5DIII GRAY_ULTRA_FAST when Crop rec preview nin Auto mode)
