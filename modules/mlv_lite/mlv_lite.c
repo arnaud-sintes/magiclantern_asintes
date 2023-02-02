@@ -4497,8 +4497,8 @@ unsigned int raw_rec_update_preview(unsigned int ctx)
     /* be gentle with the CPU, save it for recording (especially if the buffer is almost full) */
     msleep(
            (need_for_speed)
-           ? ((queued_frames > valid_slot_count / 2) ? 300 : 100)
-           : 5
+           ? ((queued_frames > valid_slot_count / 2) ? 416 : 200)
+           : 20
     );
 
     preview_dirty = 1;
