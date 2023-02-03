@@ -1,0 +1,7 @@
+000013e8 dual_iso_calc_dr_improvement
+0000143c dual_iso_set_enabled
+0000145c dual_iso_is_enabled
+0000146c dual_iso_is_active
+0000148c dual_iso_get_dr_improvement
+000016a4 dual_iso_get_recovery_iso
+000016c4 dual_iso_set_recovery_iso

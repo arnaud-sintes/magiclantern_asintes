@@ -2145,14 +2145,14 @@ static void FAST raw_preview_fast_work(void* raw_buffer, void* lv_buffer, int y1
     int black = raw_info.black_level;
     int white = raw_info.white_level;
     int div = 0;
-    while (((white-black) >> div) >= 700)
+    while (((white-black) >> div) >= 1024)
     {
         div++;
     }
 
-    uint8_t gamma[700];
+    uint8_t gamma[1024];
     
-    for (int i = 0; i < 700; i++)
+    for (int i = 0; i < 1024; i++)
     {
         /* only show 10 bits */
         int g = COERCE(raw_to_ev((i << div) + black) + 10, 0, 10) * 255 / 10;
