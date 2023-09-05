@@ -181,6 +181,14 @@ static CONFIG_INT("raw.preview", preview_mode, 2);
 #define PREVIEW_ML     (preview_mode == 2)
 #define PREVIEW_HACKED (preview_mode == 3)
 
+static CONFIG_INT( "raw.framed-preview-engine", framed_preview_engine, FRAMED_PREVIEW_PARAM__ENGINE__LEGACY );
+static CONFIG_INT( "raw.framed-preview-idle-style", framed_preview_idle_style, FRAMED_PREVIEW_PARAM__STYLE__COLORED );
+static CONFIG_INT( "raw.framed-preview-idle-resolution", framed_preview_idle_resolution, FRAMED_PREVIEW_PARAM__RESOLUTION_HALF );
+static CONFIG_INT( "raw.framed-preview-recording-style", framed_preview_recording_style, FRAMED_PREVIEW_PARAM__STYLE__GRAYSCALED );
+static CONFIG_INT( "raw.framed-preview-recording-resolution", framed_preview_recording_resolution, FRAMED_PREVIEW_PARAM__RESOLUTION_QUARTER );
+static CONFIG_INT( "raw.framed-preview-timing", framed_preview_timing, FRAMED_PREVIEW_PARAM__TIMING__LEGACY );
+static CONFIG_INT( "raw.framed-preview-statistics", framed_preview_statistics, FRAMED_PREVIEW_PARAM__STATISTICS_OFF );
+
 static CONFIG_INT("raw.warm.up", warm_up, 0);
 static CONFIG_INT("raw.use.srm.memory", use_srm_memory, 1);
 static CONFIG_INT("raw.small.hacks", small_hacks, 1);
@@ -983,7 +991,7 @@ static void measure_compression_ratio()
     if (valid_slot_count == 0)
     {
         /* no valid buffers yet? */
-	return; 
+    return; 
     }
     
     ASSERT(slots[0].ptr);
@@ -1011,9 +1019,9 @@ static EXCLUDES(settings_sem)
 void refresh_raw_settings(int force)
 {
 
-	/* if (!lv) return; */
+    /* if (!lv) return; */
     
-	if (!RAW_IS_IDLE) return; 
+    if (!RAW_IS_IDLE) return; 
 
     take_semaphore(settings_sem, 0);
 
@@ -1037,7 +1045,7 @@ void refresh_raw_settings(int force)
             /* update compression ratio once every 2 seconds */
             if (OUTPUT_COMPRESSION && compress_mq && should_run_polling_action(2000, &aux2))
             {
-		measure_compression_ratio(); 
+        measure_compression_ratio(); 
             }
         }
     }
@@ -1305,6 +1313,41 @@ static MENU_UPDATE_FUNC(pre_recording_update)
             );
         }
     }
+}
+
+static MENU_UPDATE_FUNC( framed_preview_engine_update )
+{
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__ENGINE, framed_preview_engine );
+}
+
+static MENU_UPDATE_FUNC( framed_preview_idle_style_update )
+{
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__IDLE_STYLE, framed_preview_idle_style );
+}
+
+static MENU_UPDATE_FUNC( framed_preview_idle_resolution_update )
+{
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__IDLE_RESOLUTION, framed_preview_idle_resolution );
+}
+
+static MENU_UPDATE_FUNC( framed_preview_recording_style_update )
+{
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__RECORDING_STYLE, framed_preview_recording_style );
+}
+
+static MENU_UPDATE_FUNC( framed_preview_recording_resolution_update )
+{
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__RECORDING_RESOLUTION, framed_preview_recording_resolution );
+}
+
+static MENU_UPDATE_FUNC( framed_preview_timing_update )
+{
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__TIMING, framed_preview_timing );
+}
+
+static MENU_UPDATE_FUNC( framed_preview_statistics_update )
+{
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__STATISTICS, framed_preview_statistics );
 }
 
 static MENU_UPDATE_FUNC(h264_proxy_update)
@@ -2082,11 +2125,11 @@ void FAST hack_liveview_vsync()
 /* Finding regs
 if (get_halfshutter_pressed())
 { 
-     	NotifyBox(5000, "shamem_read(0xc0f383d4) 0x%x", shamem_read(0xc0f383d4));
+         NotifyBox(5000, "shamem_read(0xc0f383d4) 0x%x", shamem_read(0xc0f383d4));
  }
 else
 {
-	NotifyBox(5000, "shamem_read(0xc0f383dc) 0x%x", shamem_read(0xc0f383dc));
+    NotifyBox(5000, "shamem_read(0xc0f383dc) 0x%x", shamem_read(0xc0f383dc));
 }
 */
         
@@ -2139,12 +2182,12 @@ void hack_liveview(int unhack)
         }
 
         /* disable auto exposure and auto white balance */
-	if (((cam_eos_m || cam_100d) && small_hacks == 0x1) || (!cam_eos_m && !cam_100d))
-	{
+    if (((cam_eos_m || cam_100d) && small_hacks == 0x1) || (!cam_eos_m && !cam_100d))
+    {
         call("aewb_enableaewb", unhack ? 1 : 0);  /* for new cameras */
         call("lv_ae",           unhack ? 1 : 0);  /* for old cameras */
         call("lv_wb",           unhack ? 1 : 0);
-	}
+    }
         
         /* change dialog refresh timer from 50ms to 8192ms */
         uint32_t dialog_refresh_timer_addr = /* in StartDialogRefreshTimer */
@@ -3126,9 +3169,9 @@ if (cam_5d3_113 || cam_5d3_123)
 /* Set corrected iso when selected max iso preset in crop_rec.c */
     if (lens_info.raw_iso == 0x0) 
     {
-	if (isoauto == 0x1) lens_info.iso = 400;
-	if (isoauto == 0x2) lens_info.iso = 800;
-	if (isoauto == 0x3) lens_info.iso = 1600;
+    if (isoauto == 0x1) lens_info.iso = 400;
+    if (isoauto == 0x2) lens_info.iso = 800;
+    if (isoauto == 0x3) lens_info.iso = 1600;
     }
 }
     mlv_fill_idnt(&idnt_hdr, mlv_start_timestamp);
@@ -3774,7 +3817,7 @@ abort_and_check_early_stop:
         /* faster writing speed that way */
 /* seems to help 100D from going black screen */
         PauseLiveView();
-	if (cam_100d) ResumeLiveView();
+    if (cam_100d) ResumeLiveView();
 
         /* PauseLiveView breaks UI locks - why? */
         gui_uilock(UILOCK_EVERYTHING);
@@ -4035,6 +4078,98 @@ static struct menu_entry raw_video_menu[] =
                 .choices = CHOICES("OFF", "auto mode"),
                 .help  = "Auto mode OFF\n"
                 "Autoselects preview modes,framing GRAY_ULTRA_FAST.\n",
+            },
+            {
+                .name = "Framed preview",
+                .select = menu_open_submenu,
+                .icon_type = IT_ACTION,
+                .help = "Configure framed preview.",
+                .children = ( struct menu_entry[] ) {
+                    {
+                        .name = "Engine",
+                        .priv = &framed_preview_engine,
+                        .max = 1,
+                        .update = framed_preview_engine_update,
+                        .choices = CHOICES( "legacy", "ultrafast" ),
+                        .help  = "Use legacy or ultrafast (cached) framed preview."
+                    },
+                    {
+                        .name = "Comportment",
+                        .select = menu_open_submenu,
+                        .icon_type = IT_ACTION,
+                        .help = "Setup ultrafast preview comportment.",
+                        .children = ( struct menu_entry[] ) {
+                            {
+                                .name = "Idle",
+                                .select = menu_open_submenu,
+                                .icon_type = IT_ACTION,
+                                .help = "Setup idle preview comportment.",
+                                .children = ( struct menu_entry[] ) {
+                                    {
+                                        .name = "Style",
+                                        .priv = &framed_preview_idle_style,
+                                        .max = 1,
+                                        .update = framed_preview_idle_style_update,
+                                        .choices = CHOICES( "colored", "grayscaled" ),
+                                        .help  = "Setup idle preview coloring style."
+                                    },
+                                    {
+                                        .name = "Resolution",
+                                        .priv = &framed_preview_idle_resolution,
+                                        .max = 1,
+                                        .update = framed_preview_idle_resolution_update,
+                                        .choices = CHOICES( "half", "quarter" ),
+                                        .help  = "Setup idle horizontal resolution."
+                                    },
+                                    MENU_EOL
+                                },
+                            },
+                            {
+                                .name = "Recording",
+                                .select = menu_open_submenu,
+                                .icon_type = IT_ACTION,
+                                .help = "Setup recording preview comportment.",
+                                .children = ( struct menu_entry[] ) {
+                                    {
+                                        .name = "Style",
+                                        .priv = &framed_preview_recording_style,
+                                        .max = 1,
+                                        .update = framed_preview_recording_style_update,
+                                        .choices = CHOICES( "colored", "grayscaled" ),
+                                        .help  = "Setup recording preview coloring style."
+                                    },
+                                    {
+                                        .name = "Resolution",
+                                        .priv = &framed_preview_recording_resolution,
+                                        .max = 1,
+                                        .update = framed_preview_recording_resolution_update,
+                                        .choices = CHOICES( "half", "quarter" ),
+                                        .help  = "Setup recording horizontal resolution."
+                                    },
+                                    MENU_EOL
+                                },
+                            },
+                            MENU_EOL
+                        },
+                    },
+                    {
+                        .name = "Timing",
+                        .priv = &framed_preview_timing,
+                        .max = 2,
+                        .update = framed_preview_timing_update,
+                        .choices = CHOICES( "legacy", "tempered", "agressive" ),
+                        .help  = "Choose display timing configuration."
+                    },
+                    {
+                        .name = "Statistics",
+                        .priv = &framed_preview_statistics,
+                        .max = 1,
+                        .update = framed_preview_statistics_update,
+                        .choices = CHOICES( "OFF", "ON" ),
+                        .help  = "Dump preview statistics in the console."
+                    },
+                    MENU_EOL
+                },
             },
             {
                 .name = "Card Spanning",
@@ -4327,7 +4462,7 @@ unsigned int raw_rec_keypress_cbr(unsigned int key)
 
 static REQUIRES(GuiMainTask)
 unsigned int raw_rec_keypress_cbr_raw(unsigned int raw_event)
-{
+{    
     struct event * event = (struct event *) raw_event;
 
     if (use_h264_proxy())
@@ -4405,7 +4540,7 @@ static int raw_rec_should_preview(void)
         }
         if (get_ms_clock() - last_hs_unpress > 300)
         {
-     	    long_halfshutter_press = 1;
+             long_halfshutter_press = 1;
 /* when using x10toggle mode in crop_rec.c will disable framing preview temporarily*/
             if (shamem_read(0xc0f11a88) == 0x1) long_halfshutter_press = 0;
         }
@@ -4481,25 +4616,51 @@ unsigned int raw_rec_update_preview(unsigned int ctx)
     /* when recording, preview both full-size buffers,
      * to make sure it's not recording every other frame */
     static int fi = 0; fi = !fi;
-    raw_preview_fast_ex(
-        RAW_IS_RECORDING ? fullsize_buffers[fi] : (void*)-1,
-        PREVIEW_HACKED && RAW_IS_RECORDING ? (void*)-1 : buffers->dst_buf,
-        -1,
-        -1,
-        (need_for_speed) 
-	? RAW_PREVIEW_GRAY_ULTRA_FAST 
-	: /*(shamem_read(0xC0F06804) == 0x93a011b || shamem_read(0xC0F06804) == 0x8d6011b || shamem_read(0xC0F06804) == 0x962011b || shamem_read(0xC0F06804) == 0x8f8011b) && */RAW_IS_RECORDING && prevmode ? RAW_PREVIEW_GRAY_ULTRA_FAST /* 1x3 binning mode test */
-        : RAW_PREVIEW_COLOR_HALFRES
-    );
     
+    // legacy engine:
+    if( get_framed_preview_param( FRAMED_PREVIEW_PARAM__ENGINE ) == FRAMED_PREVIEW_PARAM__ENGINE__LEGACY ) {
+        raw_preview_fast_ex2(
+            RAW_IS_RECORDING ? fullsize_buffers[ fi ] : ( void * ) -1,
+            PREVIEW_HACKED && RAW_IS_RECORDING ? ( void * ) -1 : buffers->dst_buf,
+            -1,
+            -1,
+            need_for_speed ?
+                RAW_PREVIEW_GRAY_ULTRA_FAST :
+                /*(shamem_read(0xC0F06804) == 0x93a011b || shamem_read(0xC0F06804) == 0x8d6011b || shamem_read(0xC0F06804) == 0x962011b || shamem_read(0xC0F06804) == 0x8f8011b) && */
+                ( RAW_IS_RECORDING && prevmode ) ?
+                    RAW_PREVIEW_GRAY_ULTRA_FAST : /* 1x3 binning mode test */
+                    RAW_PREVIEW_COLOR_HALFRES,
+            raw_recording_state == RAW_RECORDING
+        );
+    }
+    // ultrafast engine:
+    else {
+        raw_preview_fast_ex2(
+            RAW_IS_RECORDING ? fullsize_buffers[ fi ] : ( void * ) -1,
+            PREVIEW_HACKED && RAW_IS_RECORDING ? ( void * ) -1 : buffers->dst_buf,
+            -1,
+            -1,
+            RAW_PREVIEW_ADAPTIVE,
+            raw_recording_state == RAW_RECORDING
+        );
+    }
     give_semaphore(settings_sem);
 
-    /* be gentle with the CPU, save it for recording (especially if the buffer is almost full) */
-    msleep(
-           (need_for_speed)
-           ? ((queued_frames > valid_slot_count / 2) ? 416 : 200)
-           : 20
-    );
+    // legacy timing method:
+    const int framed_preview_timing = get_framed_preview_param( FRAMED_PREVIEW_PARAM__TIMING );
+    if( framed_preview_timing == FRAMED_PREVIEW_PARAM__TIMING__LEGACY ) {
+        // be gentle with the CPU, save it for recording (especially if the buffer is almost full):
+        msleep( need_for_speed  ? ( ( queued_frames > valid_slot_count / 2 ) ? 416 : 200 ) : 20 );
+    }
+    // new timing method (tempered or agressive):
+    else {
+        // when there's too much queued frame, we need to slow down to avoid record stopping
+        // note: no need to sleep for nothing when not recording at all (allow realtime preview)
+        if( need_for_speed ) {
+            const bool agressive = framed_preview_timing == FRAMED_PREVIEW_PARAM__TIMING__AGRESSIVE;
+            msleep( queued_frames > ( valid_slot_count >> 1 ) ? ( agressive ? 200 : 416 ) : ( agressive ? 100 : 200 ) );
+        }
+    }
 
     preview_dirty = 1;
     return 1;
@@ -4599,6 +4760,15 @@ static unsigned int raw_rec_init()
     if (cam_dualcard) queue_sem = create_named_semaphore("queue_sem", 1);
 
     ASSERT(((uint32_t)task_create("compress_task", 0x0F, 0x1000, compress_task, (void*)0) & 1) == 0);
+    
+    // reinject previously saved preview default values:
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__ENGINE, framed_preview_engine );
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__IDLE_STYLE, framed_preview_idle_style );
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__IDLE_RESOLUTION, framed_preview_idle_resolution );
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__RECORDING_STYLE, framed_preview_recording_style );
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__RECORDING_RESOLUTION, framed_preview_recording_resolution );
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__TIMING, framed_preview_timing );
+    set_framed_preview_param( FRAMED_PREVIEW_PARAM__STATISTICS, framed_preview_statistics );
 
     return 0;
 }
@@ -4637,6 +4807,13 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(movie_restart)
     MODULE_CONFIG(preview_mode)
     MODULE_CONFIG(prevmode)
+    MODULE_CONFIG( framed_preview_engine )
+    MODULE_CONFIG( framed_preview_idle_style )
+    MODULE_CONFIG( framed_preview_idle_resolution )
+    MODULE_CONFIG( framed_preview_recording_style )
+    MODULE_CONFIG( framed_preview_recording_resolution )
+    MODULE_CONFIG( framed_preview_timing )
+    MODULE_CONFIG( framed_preview_statistics )
     MODULE_CONFIG(use_srm_memory)
     MODULE_CONFIG(small_hacks)
     MODULE_CONFIG(more_hacks)
