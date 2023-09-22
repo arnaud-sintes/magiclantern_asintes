@@ -7,10 +7,18 @@
 #include <powersave.h>
 
 
-// TODO do we really want to neamed it "cinemato" because of the powersave feature?
+// TODO do we really want to named it "cinemato" because of the powersave feature?
 // -> can we add this feature somewhere else?
 // TODO add header file with all structs, defines and sorted function definition
-// TODO think UI twice, please
+// TODO the transition function question:
+//		I have:
+//			- n steps to cross with a d target duration in second
+//			- "speed 1" doing n1 steps ( 1) in s1 ( 30) steps per second speed
+//			- "speed 2" doing n2 steps ( 4) in s2 ( 75) steps per second speed
+//			- "speed 3" doing n3 steps (28) in s3 (100) steps per second speed
+//		How to do the best move (exact target point + closest duration) ?
+// TODO timing estimation function
+// TODO after each move, dump step deviation & duration deviation
 
 
 // maximum lens move speed value
@@ -327,6 +335,34 @@ size_t closest_step_from_position( const unsigned _focus_position )
 
 void overlay_print()
 {
+	/* TODO
+	progress (6):   " .oO" | ".oOo" | "oOo." | "Oo. " | "o. ." | ". .o"
+	update (6):     " " | "." | "o" | "O" | "o" | "."
+	transition (6): "-->" | " --" | "  -" | "   " | ">  " | "-> "
+
+	[----] [99] /99 | [999cm] | [9.999s]                // max length
+
+
+	[    ]												// disabled
+
+	[....] checking lens limits...                      // lens limit
+	[....] calibrating lens...                          // calibration
+
+	[edit]   1  / 1 |   12cm  |                         // edit: steady
+	[edit]   1  / 1 | * 89cm* |                         // edit: autofocus -> different step value
+	[edit]   1  / 1 | . 89cm. |                         // edit: [SET] affect step value (update animation)
+	[edit] . 2. / 2 |   89cm  |  3.458s                 // edit: [Q] insert new step
+	[edit]   2  / 2 | *114cm* |  3.458s                 // edit: autofocus -> different step value
+	[edit]   2  / 2 | .114cm. |  3.458s                 // edit: [SET] affect step value (update animation)
+	[edit]   2  / 2 |  114cm  | .4.123s.                // edit: [UP|DOWN] increase/decrease transition duration
+	[edit] --> { 1} | { 72cm} | (0.100s)                // edit: fast transition after [TRASH] (previous), [LEFT|RIGHT]
+	[edit]   1  / 2 |   12cm  |                         // edit: steady
+
+	[play]   1  / 2 |   12cm  |                         // play: steady
+	[play] --> { 2} | { 48cm} | (4.123s)                // play: transition to next step [SET] or first step [Q]
+	[play]   2  / 2 |  114cm  |                         // play: steady
+	[play]  67  /99 |   inf.  |                         // play: steady (infinite focus length)
+	*/
     // we're in the ML menus, bypass:
     if( gui_menu_shown() ) {
         return;
@@ -356,20 +392,10 @@ void overlay_print()
 		return;
 	}
 	
-	// TODO must represent a different focus value than the one displayed/targetted
-	//		-> same: 	  |999cm|
-	//		-> different: {{999cm}}
-	
-	// TODO must animate a change (edit) of focus/delay
-	//		-> *666cm* -> 666cm
-	
 	// play mode overlays:
 	if( g_data.play_mode ) {
 		
-		// TODO	
-		// at position: "[play] |999cm| #99 /99"
-		// transition:  "[>>>>] {{999cm}} -> #99 (10.300s)"
-		// home:        "[>>>>] {{999cm}} -> #99 (fastest)"
+		// TODO
 		c_print( "[%s]", overlay_header( OVERLAY_HEADER_PLAY ) );
 		return;
 	}
@@ -377,8 +403,6 @@ void overlay_print()
 	// edit mode overlays:		
 	
 	// TODO
-	// first position:	"[edit] {999cm} #99 /99"
-	// other positions:	"[edit] {999cm} #99 /99 -> 10.300s"
 	
 	// check for focus step highlight expiration:
 	if( g_data.edit_focus_step_timepoint_ms != 0 && ( get_ms_clock() - g_data.edit_focus_step_timepoint_ms ) > EDITION_HIGHLIGHT_MS ) {
