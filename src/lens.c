@@ -576,6 +576,17 @@ void draw_ml_topbar()
     lvinfo_display(1,0);
 }
 
+
+// is the new lens focus comporment activated?
+static volatile bool lens_focus_ex_comportment = false;
+
+// global lens values (cross-function/handler usage)
+#define LV_FOCUS_DONE__UNSET 0
+#define LV_FOCUS_DONE__OK 1
+#define LV_FOCUS_DONE__ERROR 2
+static volatile int g_lv_focus_done = LV_FOCUS_DONE__UNSET;
+
+// legacy:
 static volatile int lv_focus_requests = 0;
 static volatile int lv_focus_done = 1;
 static volatile int lv_focus_error = 0;
@@ -588,6 +599,15 @@ static volatile int lv_focus_error = 0;
 // position no matter what's set in menu
 PROP_HANDLER( PROP_LV_FOCUS_DONE )
 {
+if( lens_focus_ex_comportment ) {
+
+	// we're just checking the error flag:
+	g_lv_focus_done = ( buf[ 0 ] & 0x1000 ) ? LV_FOCUS_DONE__ERROR : LV_FOCUS_DONE__OK;
+	
+}
+// legacy comportment:
+else {
+	
     /* turn off the LED we enabled in lens_focus */
     info_led_off();
     
@@ -638,6 +658,8 @@ PROP_HANDLER( PROP_LV_FOCUS_DONE )
     }
 
     last_pos = lens_info.focus_pos;
+	
+}
 }
 
 static void
@@ -752,6 +774,105 @@ lens_focus(
     /* return 1 on success, 0 on error */
     return lv_focus_error ? 0 : 1;
 }
+
+
+void wait_for_stabilized_focus_position()
+{
+	// wait until the lens is still:
+	int focus_position_1 = lens_info.focus_pos;
+	bool move_in_progress = true;
+	while( move_in_progress ) {
+		
+		// force position update via PROP_LV_LENS:
+		_prop_lv_lens_request_update();
+		
+		// wait a while:
+		msleep( 200 );
+		
+		// get new position and check if there's a move:
+		const int focus_position_2 = lens_info.focus_pos;
+		move_in_progress = focus_position_1 != focus_position_2;
+		focus_position_1 = focus_position_2;			
+	}
+}
+
+
+bool lens_focus_ex( const unsigned _loop, const unsigned _step_size, const bool _forward, const bool _wait_feedback, const unsigned _sleep_ms )
+{
+	ASSERT( _loop >= 1 );
+	ASSERT( _step_size >= 1 && _step_size <= 3 );
+	
+	// new comportment:
+	lens_focus_ex_comportment = true;
+	
+	// setup proper step_size command value:
+    int step_size = _step_size;
+	if( !_forward ) {
+		step_size += 0x8000;
+	}
+	
+	// for each loop:
+	bool focus_success = true;
+	for( unsigned i = 0; i < _loop && focus_success; i++ ) {
+		
+		// reset focus done:
+		g_lv_focus_done = LV_FOCUS_DONE__UNSET;
+		
+		// current focus position:
+		const int focus_position_before_change = lens_info.focus_pos;
+		
+		// TODO careful with CONFIG_FOCUS_COMMANDS_PROP_NOT_CONFIRMED (reproduce lens_focus comportment here)
+		
+		// ask for lens motor movement:
+		prop_request_change_wait( PROP_LV_LENS_DRIVE_REMOTE, &step_size, 4, 1000 );
+		
+		// wait for focus done:
+		while( g_lv_focus_done == LV_FOCUS_DONE__UNSET ) {
+			
+			// yield:
+			msleep( 1 );
+		}
+		
+		// something went wrong:
+		if( g_lv_focus_done == LV_FOCUS_DONE__ERROR ) {
+			
+			// raise error flag and break:
+			focus_success = false;
+			continue;
+		}
+		
+		// wait for a single position change:
+		while( _wait_feedback && lens_info.focus_pos == focus_position_before_change ) {
+			
+			// force position update via PROP_LV_LENS:
+			_prop_lv_lens_request_update();
+			
+			// yield:
+			msleep( 1 );
+		}
+		
+		// extra sleep as requested by the caller:
+		if( _sleep_ms != 0 ) {
+			msleep( _sleep_ms );
+		}
+	}
+	
+	// if step size is 2 or 3, we need to wait for focus position stabilization:
+	if( _wait_feedback && _step_size > 1 ) {
+		wait_for_stabilized_focus_position();
+	}
+	
+	// don't know what it means (legacy code):
+	idle_wakeup_reset_counters( -10 );
+    lens_display_set_dirty();
+	
+	// back to legacy comportment:
+	lens_focus_ex_comportment = false;
+	
+	// return focus success state:
+	return focus_success;
+}
+
 
 void lens_wait_readytotakepic(int wait)
 {
@@ -1705,6 +1826,17 @@ static struct prop_lv_lens lv_lens_raw;
 
 PROP_HANDLER( PROP_LV_LENS )
 {
+if( lens_focus_ex_comportment ) {
+
+	// just update the focus distance & position, avoiding also a memcpy:
+	const struct prop_lv_lens * const lv_lens = ( void * ) buf;
+	lens_info.focus_dist = bswap16( lv_lens->focus_dist );
+    lens_info.focus_pos = ( int16_t ) bswap16( lv_lens->focus_pos );
+	
+}	
+// legacy comportment:
+else {
+	
     ASSERT(len <= sizeof(lv_lens_raw));
     memcpy(&lv_lens_raw, buf, sizeof(lv_lens_raw));
 
@@ -1746,20 +1878,23 @@ PROP_HANDLER( PROP_LV_LENS )
     old_focus_pos = lens_info.focus_pos;
     old_focal_len = lens_info.focal_len;
     update_stuff();
+	
+}
 }
 
 /* called once per second */
 void _prop_lv_lens_request_update()
 {
-    /* this property is normally active only in LiveView
-     * however, the MPU can be tricked into sending its value outside LiveView as well
-     * (Canon code also updates these values outside LiveView, when taking a picture)
-     * the input data should not be used, but... better safe than sorry
-     * this should send MPU message 06 04 09 00 00 
-     * and the MPU is expected to reply with the complete property (much larger)
-     * size is model-specific, but should not be larger than sizeof(lv_lens_raw)
-     */
-    prop_request_change(PROP_LV_LENS, &lv_lens_raw, 0);
+		
+	/* this property is normally active only in LiveView
+	 * however, the MPU can be tricked into sending its value outside LiveView as well
+	 * (Canon code also updates these values outside LiveView, when taking a picture)
+	 * the input data should not be used, but... better safe than sorry
+	 * this should send MPU message 06 04 09 00 00 
+	 * and the MPU is expected to reply with the complete property (much larger)
+	 * size is model-specific, but should not be larger than sizeof(lv_lens_raw)
+	 */
+	prop_request_change(PROP_LV_LENS, &lv_lens_raw, 0);
 }
 
 /**

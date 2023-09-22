@@ -557,4 +557,35 @@ void lens_wait_readytotakepic();
 /* force an update of PROP_LV_LENS outside LiveView */
 void _prop_lv_lens_request_update();
 
+// new lens focus function:
+//
+// _loop: 			indicate the number of loop to perform usint the given step size
+//					remark: must be >= 1 (assertion)
+// _step_size: 		indicate the size of one step
+//					remark: must be 1, 2 or 3 (assertion)
+//					note: this doesn't correspond to a reliable step count, meaning
+//					a 1x loop of step size "3" is not equivalent to a 3x loops of step size "1"
+//					e.g.: on my Canon 24mm lens, only "1" is reliable (1 real step move),
+//					"2" doing 4 steps move and "3" doing 26 steps move -> must be calibrated
+// _forward: 		are we moving forward or backward?
+//					note: "forward" and "backward" depends of the lens
+// _wait_feedback:	do we wait for proper focus position feedback or not?
+//					note: when disabled, the move is faster but focus distance & position values
+//					(focus_dist & focus_pos) set in the lens_info structure are not reliable
+//					until there are "stabilized", whereas when enabled the values are guaranteed
+//					to be properly usable after the lens_focus_ex() function call
+// _sleep_ms: 		how much ms do we want to sleep a bit between each loop
+//					remark: can be 0
+//
+// for better understanding, please note the following information around focus position:
+// - position values are dependent of the lens rotor position at camera startup (no "absolute" reference)
+// - this initial reference will be reset anytime we do a manual focus operation, but is ok with auto-focus
+// - positions reference value can be negative (lens dependent)
+// - position values progression is non-linear (~exponential, lens dependent)
+// - a forward rotor move can be translated as a positive or negative step (lens dependent)
+bool lens_focus_ex( const unsigned _loop, const unsigned _step_size, const bool _forward, const bool _wait_feedback, const unsigned _sleep_ms );
+
+// wait for a stabilized focus position, that may not be immediate when dealing with step size of 2 or 3 (multiple increments after the move query):
+void wait_for_stabilized_focus_position();
+
 #endif /* _lens_h_ */

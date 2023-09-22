@@ -1869,7 +1869,9 @@ void kelvin_toggle( void* priv, int sign )
     lens_set_kelvin(k);
 }
 
-PROP_INT( PROP_WB_KELVIN_PH, wb_kelvin_ph );
+// multiple definitions (1st: lens.c:1738)
+//PROP_INT( PROP_WB_KELVIN_PH, wb_kelvin_ph );
+extern volatile uint32_t wb_kelvin_ph;
 
 static MENU_UPDATE_FUNC(kelvin_display)
 {
