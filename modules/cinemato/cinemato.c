@@ -336,30 +336,31 @@ size_t closest_step_from_position( const unsigned _focus_position )
 void overlay_print()
 {
 	/* TODO
-	progress (6):   " .oO" | ".oOo" | "oOo." | "Oo. " | "o. ." | ". .o"
-	update (6):     " " | "." | "o" | "O" | "o" | "."
-	transition (6): "-->" | " --" | "  -" | "   " | ">  " | "-> "
+	progress (6):   " .oO", ".oOo", "oOo.", "Oo. ", "o. .", ". .o"
+	diff (2):       "{", "}"
+	update (2x2):   " ", ">"  and " ", "<"
+	transition (6): "==>", " ==", "  =", "   ", ">  ", "=> "
 
 	[----] [99] /99 | [999cm] | [9.999s]                // max length
 
 
 	[    ]												// disabled
 
-	[....] checking lens limits...                      // lens limit
-	[....] calibrating lens...                          // calibration
+	[....] checking lens limits...                      // (animated) lens limit
+	[....] calibrating lens...                          // (animated) calibration
 
 	[edit]   1  / 1 |   12cm  |                         // edit: steady
-	[edit]   1  / 1 | * 89cm* |                         // edit: autofocus -> different step value
-	[edit]   1  / 1 | . 89cm. |                         // edit: [SET] affect step value (update animation)
-	[edit] . 2. / 2 |   89cm  |  3.458s                 // edit: [Q] insert new step
-	[edit]   2  / 2 | *114cm* |  3.458s                 // edit: autofocus -> different step value
-	[edit]   2  / 2 | .114cm. |  3.458s                 // edit: [SET] affect step value (update animation)
-	[edit]   2  / 2 |  114cm  | .4.123s.                // edit: [UP|DOWN] increase/decrease transition duration
-	[edit] --> { 1} | { 72cm} | (0.100s)                // edit: fast transition after [TRASH] (previous), [LEFT|RIGHT]
+	[edit]   1  / 1 | { 89cm} |                         // edit: (animated) autofocus -> different step value
+	[edit]   1  / 1 | > 89cm< |                         // edit: (animated) [SET] affect step value (update animation)
+	[edit] > 2< / 2 |   89cm  |  3.458s                 // edit: (animated) [Q] insert new step
+	[edit]   2  / 2 | {114cm} |  3.458s                 // edit: (animated) autofocus -> different step value
+	[edit]   2  / 2 | >114cm< |  3.458s                 // edit: (animated) [SET] affect step value (update animation)
+	[edit]   2  / 2 |  114cm  | >4.123s<                // edit: (animated) [UP|DOWN] increase/decrease transition duration
+	[edit] ==> ( 1) | ( 72cm) | (0.100s)                // edit: (animated) fast transition after [TRASH] (previous), [LEFT|RIGHT]
 	[edit]   1  / 2 |   12cm  |                         // edit: steady
 
 	[play]   1  / 2 |   12cm  |                         // play: steady
-	[play] --> { 2} | { 48cm} | (4.123s)                // play: transition to next step [SET] or first step [Q]
+	[play] ==> ( 2) | ( 48cm) | (4.123s)                // play: (animated) transition to next step [SET] or first step [Q]
 	[play]   2  / 2 |  114cm  |                         // play: steady
 	[play]  67  /99 |   inf.  |                         // play: steady (infinite focus length)
 	*/
