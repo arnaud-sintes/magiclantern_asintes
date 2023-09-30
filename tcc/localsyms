@@ -1,6 +1,13 @@
 
 $a
 $d
+.ARM.attributes
+.bss
+.comment
+.data
+.rodata
+.rodata.str1.1
+.text
 Name
 __aeabi_d2iz
 __aeabi_dcmplt
@@ -65,6 +72,7 @@ global_stack
 gnu_ext
 ind
 int_type
+is_space
 last_ind
 last_line_num
 libtcc.c
@@ -83,11 +91,12 @@ new_section
 new_symtab
 nocode_wanted
 parse_flags
-parse_option_D.isra.4
+parse_option_D.constprop.0
 patch_dynsym_undef
 printf
 pstrcat
 pstrcpy
+pstrcpy.part.0
 pstrncpy
 put_elf_reloc
 put_elf_str
@@ -116,7 +125,7 @@ skip_linker_arg
 snprintf
 stab_section
 stabstr_section
-strcat_printf.constprop.8
+strcat_printf.constprop.0
 strchr
 strcmp
 strcpy
@@ -174,7 +183,7 @@ tcc_set_error_func
 tcc_set_lib_path
 tcc_set_num_callers
 tcc_set_output_type
-tcc_split_path.isra.3
+tcc_split_path
 tcc_state
 tcc_strdup
 tcc_syms

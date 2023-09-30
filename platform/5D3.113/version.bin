@@ -1,14 +1,14 @@
 
 
-Magic Lantern Nightly.2023Sep22.5D3113
+Magic Lantern Nightly.2023Sep30.5D3113
 Camera   : 5D3
 Firmware : 113
 Changeset: 051ac5e3b445+ (crop_rec_4k_mlv_snd_isogain_1x3_presets) tip
-Built on : 2023-09-22 07:44:36 by asintes@QSLAPTOP0141
+Built on : 2023-09-30 19:35:00 by asintes@MSI
 
 diff -r 051ac5e3b445 src/lens.c
 --- a/src/lens.c	Fri Feb 03 07:05:17 2023 +0100
-+++ b/src/lens.c	Fri Sep 22 09:44:36 2023 +0200
++++ b/src/lens.c	Sat Sep 30 21:35:01 2023 +0200
 @@ -576,6 +576,17 @@
      lvinfo_display(1,0);
  }
@@ -211,7 +211,7 @@ diff -r 051ac5e3b445 src/lens.c
  /**
 diff -r 051ac5e3b445 src/lens.h
 --- a/src/lens.h	Fri Feb 03 07:05:17 2023 +0100
-+++ b/src/lens.h	Fri Sep 22 09:44:36 2023 +0200
++++ b/src/lens.h	Sat Sep 30 21:35:01 2023 +0200
 @@ -557,4 +557,35 @@
  /* force an update of PROP_LV_LENS outside LiveView */
  void _prop_lv_lens_request_update();
@@ -250,7 +250,7 @@ diff -r 051ac5e3b445 src/lens.h
  #endif /* _lens_h_ */
 diff -r 051ac5e3b445 src/raw.c
 --- a/src/raw.c	Fri Feb 03 07:05:17 2023 +0100
-+++ b/src/raw.c	Fri Sep 22 09:44:36 2023 +0200
++++ b/src/raw.c	Sat Sep 30 21:35:01 2023 +0200
 @@ -2205,44 +2205,517 @@
      free(lv2rx);
  }
@@ -797,7 +797,7 @@ diff -r 051ac5e3b445 src/raw.c
  #ifdef CONFIG_RAW_LIVEVIEW
 diff -r 051ac5e3b445 src/raw.h
 --- a/src/raw.h	Fri Feb 03 07:05:17 2023 +0100
-+++ b/src/raw.h	Fri Sep 22 09:44:36 2023 +0200
++++ b/src/raw.h	Sat Sep 30 21:35:01 2023 +0200
 @@ -113,6 +113,42 @@
  #define GRAY_PROJECTION_BRIGHT_ONLY      0x100 /* you can also analyze the bright exposure (suitable for shadows, SNR... */
  #define GRAY_PROJECTION_DARK_AND_BRIGHT  0x200 /* warning: might be more accurate on regular images, but has undefined behavior on dual ISO images */
@@ -862,7 +862,7 @@ diff -r 051ac5e3b445 src/raw.h
  /* you have to call request/release in pairs (be careful not to request once and release twice) */
 diff -r 051ac5e3b445 src/shoot.c
 --- a/src/shoot.c	Fri Feb 03 07:05:17 2023 +0100
-+++ b/src/shoot.c	Fri Sep 22 09:44:36 2023 +0200
++++ b/src/shoot.c	Sat Sep 30 21:35:01 2023 +0200
 @@ -1869,7 +1869,9 @@
      lens_set_kelvin(k);
  }
