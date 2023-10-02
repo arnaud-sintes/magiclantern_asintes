@@ -21,6 +21,17 @@ void vector_destroy( vector * _p_vector )
 }
 
 
+void vector_reserve( vector * _p_vector, const size_t _count )
+{
+    // just in case:
+    vector_destroy( _p_vector );
+
+    // allocate vector and set count:
+    _p_vector->p_data = malloc( _count * _p_vector->data_size );
+    _p_vector->count = _count;
+}
+
+
 // [internal] swap the data content of a vector to a bigger or smaller vector
 // _insertion   indicates if we're doing an insertion or a removal
 // _position    position of the data insertion/removal in the vector

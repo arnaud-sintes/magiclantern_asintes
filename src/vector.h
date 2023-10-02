@@ -21,6 +21,10 @@ vector vector_create( const size_t _data_size );
 // destroy properly a vector
 void vector_destroy( vector * _p_vector );
 
+// reserve a vector content for a subsequent deserialization
+// _count       count of slot to reserve
+void vector_reserve( vector * _p_vector, const size_t _count );
+
 // insert a data in the vector, at a given position
 // _position    position of the data insertion in the vector
 //              NOTE: to queue data (insertion to end), use: vector_insert( &v, v.count, ... )
