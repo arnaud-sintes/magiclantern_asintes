@@ -6,12 +6,16 @@
 #include <bmp.h>
 #include <powersave.h>
 
-#include "cinemato.h"
+#include "focus_sq.h"
 
 
-// TODO do we really want to named it "cinemato" because of the powersave feature?
-// -> can we add this feature somewhere else?
-// TODO add header file with all structs, defines and sorted function definition
+// TODO don't forget to patch lens.c for non-5D3 cameras
+// TODO how to raise "Sequence" menu on first position of the "Focus" tab?
+
+// TODO cleanup/reorganize code
+
+// TODO basic insert/delete in list methods
+
 // TODO the transition function question:
 //		I have:
 //			- n steps to cross with a d target duration in second
@@ -25,8 +29,8 @@
 
 void save_data_store()
 {
-    FIO_RemoveFile( CINEMATO_SETTINGS_FILE );
-    FILE * p_file = FIO_CreateFile( CINEMATO_SETTINGS_FILE );
+    FIO_RemoveFile( FOCUS_SQ_SETTINGS_FILE );
+    FILE * p_file = FIO_CreateFile( FOCUS_SQ_SETTINGS_FILE );
     FIO_WriteFile( p_file, g_data.store.lens_name, LENS_NAME_MAX_LENGTH * sizeof( char ) );
     FIO_WriteFile( p_file, &g_data.store.focus_position_steps, sizeof( size_t ) );
 	FIO_WriteFile( p_file, g_data.store.focus_positions, g_data.store.focus_position_steps * sizeof( unsigned ) );
@@ -40,7 +44,7 @@ void save_data_store()
 
 void load_data_store()
 {
-    FILE * p_file = FIO_OpenFile( CINEMATO_SETTINGS_FILE, O_RDONLY );
+    FILE * p_file = FIO_OpenFile( FOCUS_SQ_SETTINGS_FILE, O_RDONLY );
     if( p_file == 0 ) {
         return;
 	}
@@ -620,7 +624,7 @@ unsigned int key_handler( const unsigned int _key )
         return 1;
 	}
     
-    // [INFO] button (de)activates cinematographer hook:
+    // [INFO] button (de)activates focus_sq hook:
     if( _key == MODULE_KEY_INFO ) {
         g_data.hook_activated = !g_data.hook_activated;
 		
@@ -724,10 +728,10 @@ unsigned int key_handler( const unsigned int _key )
 
 // menu definition:
 struct menu_entry g_menu[] = { {
-    .name    = "Cinematographer",
+    .name    = "Sequence",
     .select  = run_in_separate_task, // DryOS task, running in parallel
     .priv    = overlay_task,
-    .help    = "Start cinematographer mode with focus sequencing",
+    .help    = "Start focus sequencing",
 } };
 
 
@@ -736,8 +740,8 @@ unsigned int init()
 	// default data init:
 	memset( g_data.store.lens_name, 0, 32 );
 	
-    // add cinematographer mode to Movie menu:
-    menu_add( "Movie", g_menu, COUNT( g_menu ) );
+    // add focus sequencing mode to Focus menu:
+    menu_add( "Focus", g_menu, COUNT( g_menu ) );
     return 0;
 }
 

@@ -70,7 +70,7 @@ typedef struct
     // is task currently running?
     bool task_running;
 	
-	// is cinematographer hook activated?
+	// is focus_sq hook activated?
 	bool hook_activated;
 	
 	// are we in play or edit mode?
@@ -167,7 +167,7 @@ static data g_data = {
 
 
 // settings file name:
-#define CINEMATO_SETTINGS_FILE "ML/SETTINGS/cinemato.cfg"
+#define FOCUS_SQ_SETTINGS_FILE "ML/SETTINGS/focus_sq.cfg"
 
 void save_data_store();
 void load_data_store();

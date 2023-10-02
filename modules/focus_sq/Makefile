@@ -3,8 +3,8 @@
 TOP_DIR=../..
 
 # define the module name - make sure name is max 8 characters
-MODULE_NAME=cinemato
-MODULE_OBJS=cinemato.o
+MODULE_NAME=focus_sq
+MODULE_OBJS=focus_sq.o
 
 # include modules environment
 include $(TOP_DIR)/modules/Makefile.modules

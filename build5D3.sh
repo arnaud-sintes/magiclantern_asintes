@@ -58,9 +58,6 @@ function Package
     # zip file name
     file=$( date '+'${name}'%Y%b%d.5D3'$1'.zip' )
 
-    # remove previous zip
-    rm *.zip
-
     # create 5D3 zip with date
     cd ${platform}$1/zip/
     zip -r $file .
@@ -80,6 +77,7 @@ then
     BuildCode "113"
     BuildCode "123"
     BuildModules
+    rm *.zip
     Package "113"
     Package "123"
 # argument: fast build

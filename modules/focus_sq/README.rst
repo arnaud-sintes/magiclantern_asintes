@@ -1,4 +1,4 @@
-cinemato
+focus_sq
 ========
 
 Please write a one-page description for your module here.
