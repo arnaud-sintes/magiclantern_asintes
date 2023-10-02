@@ -36,7 +36,7 @@ delete_if_failed:
 -include $(MODULE_DEPS)
 
 clean::
-	#$(call rm_files, $(MODULE_OBJS) $(MODULE_OUTPUT) $(MODULE_SYM) $(MODULE_DEP) $(MODULE_ZIP) $(MODULE_STRINGS) $(HGDIFF_OBJS) *.o *.d *.i *.s *.dep *.sym hgstamp)
+	# $(call rm_files, $(MODULE_OBJS) $(MODULE_OUTPUT) $(MODULE_SYM) $(MODULE_DEP) $(MODULE_ZIP) $(MODULE_STRINGS) $(HGDIFF_OBJS) *.o *.d *.i *.s *.dep *.sym hgstamp)
 	$(call rm_files, $(MODULE_OBJS) $(MODULE_OUTPUT) $(MODULE_SYM) $(MODULE_DEP) $(MODULE_ZIP) $(HGDIFF_OBJS) *.o *.d *.i *.s *.dep *.sym hgstamp)
 
 module_strings.h: README.rst hgstamp
