@@ -1,5 +1,6 @@
 MODULE_CFLAGS += -I../../src/
 ML_MODULES ?= \
+	cinemato \
 	mlv_lite \
 	mlv_play \
 	mlv_snd \
