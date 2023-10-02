@@ -2677,7 +2677,7 @@ void FAST raw_preview_fast_ex2( void * _p_raw_buffer, void * _p_lv_buffer, int _
             const double preview_routine_duration_ms = ( ( double ) g_preview_statistics.cumulated_draw_time_ms ) / drawn_frame_count;
             const double display_fps = drawn_frame_count * 1000 / ( ( double ) ( clock_after_draw_ms - g_preview_statistics.clock_before_first_draw_ms ) );
             char ms_buffer[ 32 ], fps_buffer[ 32 ];
-            printf( "[Framed preview] %sms %sfps\n", format_float( preview_routine_duration_ms, 3, ms_buffer, 32 ), format_float( display_fps, 3, fps_buffer, 32 ) );
+            printf( "[Framed preview] %sms %sfps\n", format_float_ex( preview_routine_duration_ms, 3, ms_buffer, 32 ), format_float_ex( display_fps, 3, fps_buffer, 32 ) );
             reset_preview_statistics();
         }
     }

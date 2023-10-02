@@ -259,8 +259,7 @@ void overlay_print()
 		snprintf( transition_trailer, MAX_TRAILER_LENGTH, "" );
 	}
 	else {
-		char duration_buffer[ MAX_DOUBLE_CONVERSION_LENGTH ];
-		snprintf( transition_trailer, MAX_TRAILER_LENGTH, " -> %s%ss%s", p_transition_speed_highlight, format_float( interpret_transition_duration( g_data.store.focus_points[ g_data.focus_point_index - 1 ].focus_step, p_focus_point->focus_step, p_focus_point->transition_speed ), 3, duration_buffer, MAX_DOUBLE_CONVERSION_LENGTH ), p_transition_speed_highlight );
+		snprintf( transition_trailer, MAX_TRAILER_LENGTH, " -> %s%ss%s", p_transition_speed_highlight, format_float( interpret_transition_duration( g_data.store.focus_points[ g_data.focus_point_index - 1 ].focus_step, p_focus_point->focus_step, p_focus_point->transition_speed ), 3 ), p_transition_speed_highlight );
 	}
 	
 	// display also the realtime focus distance:
@@ -407,8 +406,7 @@ double evaluate_step_size_speed( const bool _forward, const unsigned _step_size,
 	wait_for_stabilized_focus_position();
 	
 	// dump step size speed:
-	char sps_buffer[ MAX_DOUBLE_CONVERSION_LENGTH ];
-	printf( "{c} step size %d: %s steps per second\n", _step_size, format_float( step_size_speed, 3, sps_buffer, MAX_DOUBLE_CONVERSION_LENGTH ) );
+	printf( "{c} step size %d: %s steps per second\n", _step_size, format_float( step_size_speed, 3 ) );
 	
 	// how many steps are remaining to reach the initial destination?
 	const size_t step_count_remaining = step_count - real_step_count;
