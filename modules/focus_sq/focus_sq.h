@@ -1,3 +1,9 @@
+#ifndef __FOCUS_SEQ_H__
+#define __FOCUS_SEQ_H__
+
+
+#include <vector.h>
+
 // maximum lens move speed value
 #define LENS_MOVE_SPEED_COUNT 4
 
@@ -184,10 +190,6 @@ void load_data_store();
 
 void c_print( const char * _fmt, ... );
 
-// printf doesn't seems to be able to dump float value, so here's a function that splits
-// a float value to a "x.y" string, with 3 numbers after the dot:
-char * format_float( const double _value, char * _buffer, const size_t _buffer_len );
-
 const char * overlay_header( const int _overlay_header_type );
 
 char * interpret_focus_distance( const unsigned _focus_distance, char * _buffer, const size_t _buffer_len );
@@ -235,3 +237,6 @@ unsigned int key_handler( const unsigned int _key );
 
 unsigned int init();
 unsigned int deinit();
+
+
+#endif

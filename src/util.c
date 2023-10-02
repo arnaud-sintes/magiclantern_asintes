@@ -1,5 +1,3 @@
-
-
 #include <dryos.h>
 #include <property.h>
 #include <util.h>
@@ -30,4 +28,19 @@ int bin_search(int lo, int hi, CritFunc crit)
     if (c == 0) return m;
     if (c > 0) return bin_search(m, hi, crit);
     return bin_search(lo, m, crit);
+}
+
+
+char * format_float( const double _value, const int _digits, char * _buffer, const size_t _buffer_len )
+{
+    ASSERT( _digits > 1 && _digits < 9 );
+    const int left = ( int ) _value;
+    int factor = 1;
+    for( int i = 0; i < _digits; i++ ) {
+        factor *= 10;
+    }
+    // TODO better use round( _value * factor ) in the future, but round() is not implemented
+    const int right = ABS( ( int )( _value * factor ) ) - ABS( left * factor );
+    snprintf( _buffer, _buffer_len - 1, "%d.%d", left, right );
+    return _buffer;
 }

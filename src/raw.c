@@ -31,6 +31,7 @@
 #include "console.h"
 #include "fps.h"
 #include "platform/state-object.h"
+#include "util.h"
 
 #undef RAW_DEBUG        /* define it to help with porting */
 #undef RAW_DEBUG_DUMP   /* if you want to save the raw image buffer and the DNG from here */
@@ -2577,17 +2578,6 @@ static void FAST draw_preview_ultrafast( const void * _p_raw_buffer, const void 
 }
 
 
-// printf doesn't seems to be able to dump float value, so here's a function that splits
-// a float value to a "x.y" string, with 3 numbers after the dot:
-char * format_float( const double _value, char * _buffer, const size_t _buffer_len )
-{
-    const int left = ( int ) _value;
-    const int right = ( ( int )( _value * 1000 ) ) - ( left * 1000 );
-    snprintf( _buffer, _buffer_len - 1, "%d.%d", left, right );
-    return _buffer;
-}
-
-
 // updated drawing routine with an additional recording parameter:
 void FAST raw_preview_fast_ex2( void * _p_raw_buffer, void * _p_lv_buffer, int _y1, int _y2, int _quality, const bool _recording )
 {
@@ -2687,7 +2677,7 @@ void FAST raw_preview_fast_ex2( void * _p_raw_buffer, void * _p_lv_buffer, int _
             const double preview_routine_duration_ms = ( ( double ) g_preview_statistics.cumulated_draw_time_ms ) / drawn_frame_count;
             const double display_fps = drawn_frame_count * 1000 / ( ( double ) ( clock_after_draw_ms - g_preview_statistics.clock_before_first_draw_ms ) );
             char ms_buffer[ 32 ], fps_buffer[ 32 ];
-            printf( "[Framed preview] %sms %sfps\n", format_float( preview_routine_duration_ms, ms_buffer, 32 ), format_float( display_fps, fps_buffer, 32 ) );
+            printf( "[Framed preview] %sms %sfps\n", format_float( preview_routine_duration_ms, 3, ms_buffer, 32 ), format_float( display_fps, 3, fps_buffer, 32 ) );
             reset_preview_statistics();
         }
     }
