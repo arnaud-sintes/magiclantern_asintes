@@ -32,18 +32,6 @@ typedef int (*CritFunc)(int);
 int bin_search(int lo, int hi, CritFunc crit);
 
 
-// return the absolute integer value of a given integer value
-int abs_( const int _value );
-
-// return the floored integer value of a given float value
-int floor_( const double _value );
-
-// return the ceiled integer value of a given float value
-int ceil_( const double _value );
-
-// return the rounded integer value of a given float value
-int round_( const double _value );
-
 // format a float value as a text (potentially rounded)
 // _value       the float value to convert
 // _precision   the expected number of digits after the decimal point

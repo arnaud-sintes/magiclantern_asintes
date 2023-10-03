@@ -1,6 +1,7 @@
 #include <dryos.h>
 #include <property.h>
 #include <util.h>
+#include "math.h"
 
 /* helper functions for atomic in-/decrasing variables */
 void util_atomic_inc(uint32_t *value)
@@ -30,40 +31,13 @@ int bin_search(int lo, int hi, CritFunc crit)
     return bin_search(lo, m, crit);
 }
 
-
-int abs_( const int _value )
-{
-    return _value< 0  ? -_value : _value;
-}
-
-
-int floor_( const double _value )
-{
-    int value = ( int ) _value;
-    return _value >= 0 ? value : value - 1;
-}
-
-
-int ceil_( const double _value )
-{
-    int value = ( int ) _value;
-    return _value > 0 ? value + 1 : value;
-}
-
-
-int round_( const double _value )
-{
-    return _value >= 0 ? floor_( _value + 0.5 ) : ceil_( _value - 0.5 );
-}
-
-
 char * format_float_ex( const double _value, const int _digits, char * _buffer, const size_t _buffer_len )
 {
     ASSERT( _digits > 1 && _digits < 9 );
     const int left = ( int ) _value;
     static const int factors[ 8 ] = { 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000 };
     const int factor = factors[ _digits - 1 ];
-    const int right = abs_( round_( _value * factor ) ) - abs_( left * factor );
+    const int right = ABS( round( _value * factor ) ) - ABS( left * factor );
     snprintf( _buffer, _buffer_len - 1, "%d.%d", left, right );
     return _buffer;
 }
