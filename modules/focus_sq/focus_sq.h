@@ -239,4 +239,49 @@ unsigned int init();
 unsigned int deinit();
 
 
+// single mode configuration:
+typedef struct
+{
+    const size_t steps; // fixed step count taken in a single 'do' call
+    const double speed; // mode speed in steps per second
+} mode;
+
+
+// single mode call count:
+typedef struct
+{
+    const mode * p_mode; // related mode
+    size_t count; // lens_focus_ex call count to be computed
+} mode_call_count;
+
+
+// computed mode call count distribution:
+typedef struct
+{
+    mode_call_count mode_call_counts[ 3 ]; // distribution of mode call count
+    double wait; // how much we need to wait (in second), can be negative
+} distribution;
+
+
+// _p_distribution	a mode call count distribution
+// return the total duration of the given distribution
+double distribution_duration( const distribution * const  _p_distribution );
+
+// _step_range		is the range of step we want to ride
+// _target_duration	is the targeted duration of the ride, in second
+// _p_modes			available modes
+// return the computed mode call count distribution
+distribution distribute_modes( const size_t _step_range, const double _target_duration, const mode * const _p_modes );
+
+
+// single job structure:
+typedef struct {
+	size_t remaining_call_counts; // how many remaining calls to do
+	size_t count_cycle; // the related count cycle of the job
+} Job;
+
+// play in a smoothly distributed manner a previously computed mode distribution:
+void play_distribution( const distribution * const _p_distribution );
+
+
 #endif

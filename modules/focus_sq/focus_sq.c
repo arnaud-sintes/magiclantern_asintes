@@ -602,6 +602,181 @@ void edit__decrease_transition_speed()
 }
 
 
+double distribution_duration( const distribution * const  _p_distribution )
+{
+    double duration = 0;
+    for( int i = 0; i < 3; i++ ) {
+        const mode_call_count * const p_mode_call_count = &_p_distribution->mode_call_counts[ i ];
+        if( p_mode_call_count->count != 0 ) {
+            duration += ( p_mode_call_count->count * p_mode_call_count->p_mode->steps ) / p_mode_call_count->p_mode->speed;
+        }
+    }
+    return duration;
+}
+
+
+distribution distribute_modes( const size_t _step_range, const double _target_duration, const mode * const _p_modes )
+{
+    distribution distribution_ = { { { .count = 0 }, { .count = 0 }, { .count = 0 } }, .wait = 0 };
+
+    // compute possible durations depending of modes:
+    double durations[ 3 ];
+    for( int i = 0; i < 3; i++ ) {
+        durations[ i ] = _step_range / _p_modes[ i ].speed;
+    }
+
+    // quickest effort:
+    if( durations[ 0 ] > _target_duration ) {
+        // compute mode calls to reach the exact target point:
+        size_t range = 0;
+        for( int i = 0; i < 3 && range < _step_range; i++ ) {
+            mode_call_count * const p_mode_call_count = &distribution_.mode_call_counts[ i ];
+            p_mode_call_count->p_mode = &_p_modes[ i ];
+            p_mode_call_count->count = ( _step_range - range ) / p_mode_call_count->p_mode->steps;
+            range += p_mode_call_count->count * p_mode_call_count->p_mode->steps;
+        }
+    }
+    // slowest:
+    else
+    if( durations[ 2 ] < _target_duration ) {
+        mode_call_count * const p_mode_call_count = &distribution_.mode_call_counts[ 2 ];
+        p_mode_call_count->p_mode = &_p_modes[ 2 ];
+        p_mode_call_count->count = _step_range;
+    }
+    // regular distribution:
+    else {
+        // search in-between position:
+        int offset = 0;
+        while( offset < 2 && _target_duration > durations[ offset + 1 ] ) {
+            offset++;
+        }
+
+        // compute in-between duration ratio to reduce the dichotomic search range as much as possible:
+        const double ratio = 1 - ( ( _target_duration - durations[ offset ] ) / durations[ offset + 1 ] );
+
+        // dichotomic best distribution search:
+        double best_distribution_duration = 100000;
+        for( double delta = -0.2; delta < ( double ) 0.2; delta += ( double ) 0.005 ) { // 80 loops between +/-20% of the initial ratio
+
+            // compute distribution with current ratio and delta:
+            size_t count = ( size_t )( ( ratio + delta ) * _step_range ) / _p_modes[ offset ].steps;
+
+            // the first speed is the reference:
+            size_t range = _step_range;
+            int _offset = offset;
+            distribution current_distribution = { { { .count = 0 }, { .count = 0 }, { .count = 0 } }, .wait = 0 };
+            int mode_call_counts_index = 0;
+            mode_call_count * p_mode_call_count = &current_distribution.mode_call_counts[ mode_call_counts_index++ ];
+            p_mode_call_count->p_mode = &_p_modes[ _offset ];
+            p_mode_call_count->count = count;
+
+            // iterate over slower speeds until reaching the destination:
+            while( _offset < 3 && count != 0 ) {
+                range -= count * _p_modes[ _offset ].steps;
+                _offset++;
+                count = range / _p_modes[ _offset ].steps;
+                if( count != 0 ) {
+                    p_mode_call_count = &current_distribution.mode_call_counts[ mode_call_counts_index++ ];
+                    p_mode_call_count->p_mode = &_p_modes[ _offset ];
+                    p_mode_call_count->count = count;
+                }
+            }
+
+            // is it the best match regarding the duration? (the smallest the closest to the target)
+            const double current_distribution_duration = ABS( _target_duration - distribution_duration( &current_distribution ) );
+            if( current_distribution_duration < best_distribution_duration ) {
+                best_distribution_duration = current_distribution_duration;
+                distribution_ = current_distribution;
+            }
+        }
+    }
+    
+    // wait time:
+    distribution_.wait = _target_duration - distribution_duration( &distribution_ );
+
+    // return computed distribution:
+    return distribution_;
+}
+
+
+void play_distribution( const distribution * const _p_distribution )
+{
+    // TODO we will need to measure:
+    // - the REAL execution loop time (whole play_distribution function call)
+	// -> compute/dump delta between expected/REAL
+    // - the CURRENT REAL position of the rotor at the end
+	// -> compute/dump delta between expected/REAL
+    
+    // what's the greatest count value in the distribution?
+    size_t max_count = 0;
+    for( int i = 0; i < 3; i++ ) {
+        if( _p_distribution->mode_call_counts[ i ].count > max_count ) {
+            max_count = _p_distribution->mode_call_counts[ i ].count;
+        }
+    }
+
+    // prepare jobs:
+	// NOTE: 1-3 jobs are for lens_focus_ex calls with step_size 1, 2, 3
+	// 4th job is for msleep( sleep_duration_ms ) calls
+    Job jobs[ 4 ] = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } };
+    for( int i = 0; i < 3; i++ ) {
+        const mode_call_count * const p_mode_call_count = &_p_distribution->mode_call_counts[ i ];
+        if( p_mode_call_count->count != 0 ) {
+            jobs[ i ].remaining_call_counts = p_mode_call_count->count;
+            jobs[ i ].count_cycle = max_count / p_mode_call_count->count;
+        }
+    }
+
+    // if sleep is positive, distribute the sleep statements:
+    size_t sleep_duration_ms = 5;
+    if( _p_distribution->wait > 0 ) {
+        jobs[ 3 ].remaining_call_counts = max_count;
+        // while the sleep count is greater than maximum count, increase the sleep time:
+        while( jobs[ 3 ].remaining_call_counts >= max_count ) {
+            sleep_duration_ms *= 2; // try 10ms, 20ms, 40ms, 80ms...
+            jobs[ 3 ].remaining_call_counts = ( size_t )( _p_distribution->wait * 1000 / sleep_duration_ms );
+        }
+        jobs[ 3 ].count_cycle = max_count / jobs[ 3 ].remaining_call_counts;
+    }
+
+    // do smoothly distributed job calls until reaching destination:
+    bool reached = false;
+    size_t cycle = 0;
+    while( !reached ) {
+        reached = true;
+
+        // for each job:
+        for( int i = 0; i < 4; i++ ) {
+
+            // nothing left to do here:
+            if( jobs[ i ].remaining_call_counts == 0 ) {
+                continue;
+            }
+
+            // something left, don't escape yet:
+            reached = false;
+
+            // not yet the right cycle to get a smooth value distribution:
+            if( cycle % jobs[ i ].count_cycle != jobs[ i ].count_cycle - 1 ) {
+                continue;
+            }
+
+            // do the job itself:
+            if( i < 3 ) {
+                // TODO lens_focus_ex
+            }
+            else {
+                // TODO msleep( sleep_duration_ms )
+            }
+            jobs[ i ].remaining_call_counts--;
+        }
+
+        // cycle increment:
+        cycle++;
+    }
+}
+
+
 unsigned int key_handler( const unsigned int _key )
 {
     // we're in the ML menus, bypass:
