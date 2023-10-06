@@ -15,16 +15,6 @@
 
 // TODO cleanup/reorganize code
 
-// TODO basic insert/delete in list methods
-
-// TODO the transition function question:
-//		I have:
-//			- n steps to cross with a d target duration in second
-//			- "speed 1" doing n1 steps ( 1) in s1 ( 30) steps per second speed
-//			- "speed 2" doing n2 steps ( 4) in s2 ( 75) steps per second speed
-//			- "speed 3" doing n3 steps (28) in s3 (100) steps per second speed
-//		How to do the best move (exact target point + closest duration) ?
-// TODO timing estimation function
 // TODO after each move, dump step deviation & duration deviation
 
 
