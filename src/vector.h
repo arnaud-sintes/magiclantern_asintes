@@ -1,7 +1,7 @@
 #ifndef __VECTOR_H__
 #define __VECTOR_H__
 
-#include <util.h>
+#include "dryos.h"
 
 
 // vector structure:
@@ -49,4 +49,4 @@ void * vector_get( vector * _p_vector, const size_t _position );
 void vector_dump( vector * _p_vector );
 
 
-#endif
+#endif /* __VECTOR_H__ */

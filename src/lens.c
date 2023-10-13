@@ -601,13 +601,13 @@ PROP_HANDLER( PROP_LV_FOCUS_DONE )
 {
 if( lens_focus_ex_comportment ) {
 
-	// we're just checking the error flag:
-	g_lv_focus_done = ( buf[ 0 ] & 0x1000 ) ? LV_FOCUS_DONE__ERROR : LV_FOCUS_DONE__OK;
-	
+    // we're just checking the error flag:
+    g_lv_focus_done = ( buf[ 0 ] & 0x1000 ) ? LV_FOCUS_DONE__ERROR : LV_FOCUS_DONE__OK;
+    
 }
 // legacy comportment:
 else {
-	
+    
     /* turn off the LED we enabled in lens_focus */
     info_led_off();
     
@@ -658,7 +658,7 @@ else {
     }
 
     last_pos = lens_info.focus_pos;
-	
+    
 }
 }
 
@@ -778,99 +778,117 @@ lens_focus(
 
 void wait_for_stabilized_focus_position()
 {
-	// wait until the lens is still:
-	int focus_position_1 = lens_info.focus_pos;
-	bool move_in_progress = true;
-	while( move_in_progress ) {
-		
-		// force position update via PROP_LV_LENS:
-		_prop_lv_lens_request_update();
-		
-		// wait a while:
-		msleep( 200 );
-		
-		// get new position and check if there's a move:
-		const int focus_position_2 = lens_info.focus_pos;
-		move_in_progress = focus_position_1 != focus_position_2;
-		focus_position_1 = focus_position_2;			
-	}
+    // wait until the lens is still:
+    int focus_position_1 = lens_info.focus_pos;
+    bool move_in_progress = true;
+    while( move_in_progress ) {
+        
+        // force position update via PROP_LV_LENS:
+        _prop_lv_lens_request_update();
+        
+        // wait a while:
+        msleep( 200 );
+        
+        // get new position and check if there's a move:
+        const int focus_position_2 = lens_info.focus_pos;
+        move_in_progress = focus_position_1 != focus_position_2;
+        focus_position_1 = focus_position_2;            
+    }
 }
 
 
 bool lens_focus_ex( const unsigned _loop, const unsigned _step_size, const bool _forward, const bool _wait_feedback, const unsigned _sleep_ms )
 {
-	ASSERT( _loop >= 1 );
-	ASSERT( _step_size >= 1 && _step_size <= 3 );
-	
-	// new comportment:
-	lens_focus_ex_comportment = true;
-	
-	// setup proper step_size command value:
+    ASSERT( _loop >= 1 );
+    ASSERT( _step_size >= 1 && _step_size <= 3 );
+    
+    // new comportment:
+    lens_focus_ex_comportment = true;
+    
+    // setup proper step_size command value:
     int step_size = _step_size;
-	if( !_forward ) {
-		step_size += 0x8000;
-	}
-	
-	// for each loop:
-	bool focus_success = true;
-	for( unsigned i = 0; i < _loop && focus_success; i++ ) {
-		
-		// reset focus done:
-		g_lv_focus_done = LV_FOCUS_DONE__UNSET;
-		
-		// current focus position:
-		const int focus_position_before_change = lens_info.focus_pos;
-		
-		// TODO careful with CONFIG_FOCUS_COMMANDS_PROP_NOT_CONFIRMED (reproduce lens_focus comportment here)
-		
-		// ask for lens motor movement:
-		prop_request_change_wait( PROP_LV_LENS_DRIVE_REMOTE, &step_size, 4, 1000 );
-		
-		// wait for focus done:
-		while( g_lv_focus_done == LV_FOCUS_DONE__UNSET ) {
-			
-			// yield:
-			msleep( 1 );
-		}
-		
-		// something went wrong:
-		if( g_lv_focus_done == LV_FOCUS_DONE__ERROR ) {
-			
-			// raise error flag and break:
-			focus_success = false;
-			continue;
-		}
-		
-		// wait for a single position change:
-		while( _wait_feedback && lens_info.focus_pos == focus_position_before_change ) {
-			
-			// force position update via PROP_LV_LENS:
-			_prop_lv_lens_request_update();
-			
-			// yield:
-			msleep( 1 );
-		}
-		
-		// extra sleep as requested by the caller:
-		if( _sleep_ms != 0 ) {
-			msleep( _sleep_ms );
-		}
-	}
-	
-	// if step size is 2 or 3, we need to wait for focus position stabilization:
-	if( _wait_feedback && _step_size > 1 ) {
-		wait_for_stabilized_focus_position();
-	}
-	
-	// don't know what it means (legacy code):
-	idle_wakeup_reset_counters( -10 );
+    if( !_forward ) {
+        step_size += 0x8000;
+    }
+    
+    // for each loop:
+    bool focus_success = true;
+    for( unsigned i = 0; i < _loop && focus_success; i++ ) {
+        
+        // reset focus done:
+        g_lv_focus_done = LV_FOCUS_DONE__UNSET;
+        
+        // current focus position:
+        const int focus_position_before_change = lens_info.focus_pos;
+        
+        #ifdef CONFIG_FOCUS_COMMANDS_PROP_NOT_CONFIRMED
+            /* in old models, each focus command is confirmed by pfAfComplete interrupt */
+            /* it's not safe to send commands before that (camera crashes) */
+            /* properties are not confirmed, so prop_request_change_wait would time out */
+            /* not all cameras having this string require this though (550D, maybe 7D as well) */
+            /* todo: VxWorks cameras may require this too */
+            extern volatile int pfAfComplete_counter;
+            const int pfAfComplete_counter_previous = pfAfComplete_counter;
+
+            // ask for lens motor movement:
+            prop_request_change( PROP_LV_LENS_DRIVE_REMOTE, &step_size, 4 );
+
+            // wait for focus done:
+            while( pfAfComplete_counter == pfAfComplete_counter_previous ) {
+
+                // yield
+                msleep( 1 );
+            }
+        #else
+            // ask for lens motor movement:
+            prop_request_change_wait( PROP_LV_LENS_DRIVE_REMOTE, &step_size, 4, 1000 );
+            
+            // wait for focus done:
+            while( g_lv_focus_done == LV_FOCUS_DONE__UNSET ) {
+                
+                // yield:
+                msleep( 1 );
+            }
+            
+            // something went wrong:
+            if( g_lv_focus_done == LV_FOCUS_DONE__ERROR ) {
+                
+                // raise error flag and break:
+                focus_success = false;
+                continue;
+            }
+        #endif
+        
+        // wait for a single position change:
+        while( _wait_feedback && lens_info.focus_pos == focus_position_before_change ) {
+            
+            // force position update via PROP_LV_LENS:
+            _prop_lv_lens_request_update();
+            
+            // yield:
+            msleep( 1 );
+        }
+        
+        // extra sleep as requested by the caller:
+        if( _sleep_ms != 0 ) {
+            msleep( _sleep_ms );
+        }
+    }
+    
+    // if step size is 2 or 3, we need to wait for focus position stabilization:
+    if( _wait_feedback && _step_size > 1 ) {
+        wait_for_stabilized_focus_position();
+    }
+    
+    // don't know what it means (legacy code):
+    idle_wakeup_reset_counters( -10 );
     lens_display_set_dirty();
-	
-	// back to legacy comportment:
-	lens_focus_ex_comportment = false;
-	
-	// return focus success state:
-	return focus_success;
+    
+    // back to legacy comportment:
+    lens_focus_ex_comportment = false;
+    
+    // return focus success state:
+    return focus_success;
 }
 
 
@@ -1828,15 +1846,15 @@ PROP_HANDLER( PROP_LV_LENS )
 {
 if( lens_focus_ex_comportment ) {
 
-	// just update the focus distance & position, avoiding also a memcpy:
-	const struct prop_lv_lens * const lv_lens = ( void * ) buf;
-	lens_info.focus_dist = bswap16( lv_lens->focus_dist );
+    // just update the focus distance & position, avoiding also a memcpy:
+    const struct prop_lv_lens * const lv_lens = ( void * ) buf;
+    lens_info.focus_dist = bswap16( lv_lens->focus_dist );
     lens_info.focus_pos = ( int16_t ) bswap16( lv_lens->focus_pos );
-	
-}	
+    
+}    
 // legacy comportment:
 else {
-	
+    
     ASSERT(len <= sizeof(lv_lens_raw));
     memcpy(&lv_lens_raw, buf, sizeof(lv_lens_raw));
 
@@ -1878,23 +1896,23 @@ else {
     old_focus_pos = lens_info.focus_pos;
     old_focal_len = lens_info.focal_len;
     update_stuff();
-	
+    
 }
 }
 
 /* called once per second */
 void _prop_lv_lens_request_update()
 {
-		
-	/* this property is normally active only in LiveView
-	 * however, the MPU can be tricked into sending its value outside LiveView as well
-	 * (Canon code also updates these values outside LiveView, when taking a picture)
-	 * the input data should not be used, but... better safe than sorry
-	 * this should send MPU message 06 04 09 00 00 
-	 * and the MPU is expected to reply with the complete property (much larger)
-	 * size is model-specific, but should not be larger than sizeof(lv_lens_raw)
-	 */
-	prop_request_change(PROP_LV_LENS, &lv_lens_raw, 0);
+        
+    /* this property is normally active only in LiveView
+     * however, the MPU can be tricked into sending its value outside LiveView as well
+     * (Canon code also updates these values outside LiveView, when taking a picture)
+     * the input data should not be used, but... better safe than sorry
+     * this should send MPU message 06 04 09 00 00 
+     * and the MPU is expected to reply with the complete property (much larger)
+     * size is model-specific, but should not be larger than sizeof(lv_lens_raw)
+     */
+    prop_request_change(PROP_LV_LENS, &lv_lens_raw, 0);
 }
 
 /**
@@ -2902,7 +2920,7 @@ static LVINFO_UPDATE_FUNC(fps_update)
     if (is_movie_mode())
     {
         int f = shamem_read(0xc0f0501c) == 0x20 ? 400: shamem_read(0xc0f0501c) == 0x21 ? 1000: shamem_read(0xc0f0501c) == 0x22 ? 2000: 
-			    shamem_read(0xc0f0501c) == 0x23 ? 3000: shamem_read(0xc0f0501c) == 0x24 ? 4000: shamem_read(0xc0f0501c) == 0x25 ? 5000: fps_get_current_x1000();
+                shamem_read(0xc0f0501c) == 0x23 ? 3000: shamem_read(0xc0f0501c) == 0x24 ? 4000: shamem_read(0xc0f0501c) == 0x25 ? 5000: fps_get_current_x1000();
         snprintf(buffer, sizeof(buffer), 
             "%2d.%03d", 
             f / 1000, f % 1000
@@ -2939,7 +2957,7 @@ static LVINFO_UPDATE_FUNC(mode_update)
     snprintf(buffer, sizeof(buffer), get_shootmode_name_short(shooting_mode_custom));
 /* hijacking left bottom corner eosm bits showing from crop rec */
 #if defined(CONFIG_EOSM) || defined(CONFIG_5D3) || defined(CONFIG_100D) || defined(CONFIG_6D)
-					snprintf(buffer, sizeof(buffer), "14bit");
+                    snprintf(buffer, sizeof(buffer), "14bit");
     if (shamem_read(0xc0f0815c) == 0x3) snprintf(buffer, sizeof(buffer), "8bit");
     if (shamem_read(0xc0f0815c) == 0x4) snprintf(buffer, sizeof(buffer), "9bit");
     if (shamem_read(0xc0f0815c) == 0x5) snprintf(buffer, sizeof(buffer), "10bit");
@@ -3089,52 +3107,52 @@ static LVINFO_UPDATE_FUNC(iso_update)
         }
 
 /* restricting autoiso for eom, 100D and 5D3. Switch in crop_rec.c */
-		if (shamem_read(0xC0F0b12c) == 0x7 && lens_info.raw_iso_auto > 0x5d) 
-		{
-			STR_APPEND(buffer, "400+");
-		}
-		else if (shamem_read(0xC0F0b12c) == 0x8 && lens_info.raw_iso_auto > 0x63) 
-		{
-			STR_APPEND(buffer, "800+");
-		}
-		else if (shamem_read(0xC0F0b12c) == 0x9 && lens_info.raw_iso_auto > 0x6d) 
-		{
-			STR_APPEND(buffer, "1600+");
-		}
+        if (shamem_read(0xC0F0b12c) == 0x7 && lens_info.raw_iso_auto > 0x5d) 
+        {
+            STR_APPEND(buffer, "400+");
+        }
+        else if (shamem_read(0xC0F0b12c) == 0x8 && lens_info.raw_iso_auto > 0x63) 
+        {
+            STR_APPEND(buffer, "800+");
+        }
+        else if (shamem_read(0xC0F0b12c) == 0x9 && lens_info.raw_iso_auto > 0x6d) 
+        {
+            STR_APPEND(buffer, "1600+");
+        }
 
 /* isoclimb preset crop_rec.c */
-		else if (shamem_read(0xC0F0b12c) == 0x11) 
-		{
-			STR_APPEND(buffer, "100"); 
-		}
-		else if (shamem_read(0xC0F0b12c) == 0x12) 
-		{
-			STR_APPEND(buffer, "200"); 
-		}
-		else if (shamem_read(0xC0F0b12c) == 0x13) 
-		{	
-			STR_APPEND(buffer, "400"); 
-		}
-		else if (shamem_read(0xC0F0b12c) == 0x14) 
-		{
-			STR_APPEND(buffer, "800");  
-		}
-		else if (shamem_read(0xC0F0b12c) == 0x15) 
-		{
-			STR_APPEND(buffer, "1600"); 
-    		}	
-		else if (shamem_read(0xC0F0b12c) == 0x16) 
-		{	
-			STR_APPEND(buffer, "3200"); 
-		}
+        else if (shamem_read(0xC0F0b12c) == 0x11) 
+        {
+            STR_APPEND(buffer, "100"); 
+        }
+        else if (shamem_read(0xC0F0b12c) == 0x12) 
+        {
+            STR_APPEND(buffer, "200"); 
+        }
+        else if (shamem_read(0xC0F0b12c) == 0x13) 
+        {    
+            STR_APPEND(buffer, "400"); 
+        }
+        else if (shamem_read(0xC0F0b12c) == 0x14) 
+        {
+            STR_APPEND(buffer, "800");  
+        }
+        else if (shamem_read(0xC0F0b12c) == 0x15) 
+        {
+            STR_APPEND(buffer, "1600"); 
+            }    
+        else if (shamem_read(0xC0F0b12c) == 0x16) 
+        {    
+            STR_APPEND(buffer, "3200"); 
+        }
         else if (shamem_read(0xC0F0b12c) == 0x17)
         {
             STR_APPEND(buffer, "6400");
         }
-		else
-		{
-			STR_APPEND(buffer, "%d", iso);
-		}
+        else
+        {
+            STR_APPEND(buffer, "%d", iso);
+        }
 
     }
     else /* photo mode */

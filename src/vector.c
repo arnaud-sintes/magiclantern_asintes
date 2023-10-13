@@ -44,6 +44,7 @@ void _vector_swap( vector * _p_vector, const bool _insertion, const size_t _posi
     // allocate new vector:
     const size_t vector_count = _p_vector->count + ( _insertion ? 1 : -1 );
     uint8_t * p_data = malloc( vector_count * _p_vector->data_size );
+    ASSERT( p_data != NULL );
 
     // copy left part of current vector in the new vector, if needed:
     if( _position > 0 ) {
