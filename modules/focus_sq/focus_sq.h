@@ -154,7 +154,7 @@ void Overlay_task();
 
 
 // name of the configuration file:
-#define FOCUS_SQ_SETTINGS_FILE "focus_sq.cfg"
+#define FOCUS_SQ_SETTINGS_FILE "ML/SETTINGS/focus_sq.cfg"
 
 // save configuration file:
 void Save_data_store();

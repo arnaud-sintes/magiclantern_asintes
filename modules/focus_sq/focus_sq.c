@@ -9,6 +9,13 @@
 
 #include "focus_sq.h"
 
+// TODO the change between EDIT and PLAY modes is not obvious -> animate?
+// TODO need to recompute some distribution timing on the next sequence point (c.f. TODO in code)
+// TODO step deviation issues after movement seems quite big, why?
+// - may be better to not save the distribution but always recalculate it based over the real current position at the beginning of the move?
+// - maybe use an average step movement stored in double ?
+// TODO got an ASSERTion one time during calibration around vector_get() -> cannot reproduce, but better dig it
+
 
 // default data structure values:
 static Data g_data = {
@@ -89,13 +96,13 @@ char * Print_overlay__edit_play_content( const size_t _cycle )
     static char step[ CONTENT_LENGTH + 1 ];
     if( g_data.display.transition_in_progress ) {
         static const char * const p_transition[ 6 ] = { "==>", " ==", "  =", "   ", ">  ", "=> " };
-        snprintf( step, CONTENT_LENGTH, "%s (% 2zu)", p_transition[ _cycle % 6 ], g_data.display.sequence_index );
+        snprintf( step, CONTENT_LENGTH, "%s (% 2d)", p_transition[ _cycle % 6 ], g_data.display.sequence_index );
     }
     else {
         const size_t pos = g_data.display.sequence_edited_timepoint_ms != 0 ? _cycle % 2 : 0;
         p_edit_left = p_edit[ 0 ][ pos ];
         p_edit_right = p_edit[ 1 ][ pos ];
-        snprintf( step, CONTENT_LENGTH, "%s% 2zu%s /% 2zu", p_edit_left, g_data.display.sequence_index, p_edit_right, g_data.display.sequence_length );
+        snprintf( step, CONTENT_LENGTH, "%s% 2d%s /% 2d", p_edit_left, g_data.display.sequence_index, p_edit_right, g_data.display.sequence_length );
     }
 
     // focus part:
@@ -110,7 +117,7 @@ char * Print_overlay__edit_play_content( const size_t _cycle )
         snprintf( focus_distance_buffer, CONTENT_LENGTH, " inf. " );
     }
     else {
-        snprintf( focus_distance_buffer, CONTENT_LENGTH, "% 4ucm", focus_distance_cm );
+        snprintf( focus_distance_buffer, CONTENT_LENGTH, "% 4dcm", focus_distance_cm );
     }
     snprintf( focus, CONTENT_LENGTH, "%s%s%s", p_edit_left, focus_distance_buffer, p_edit_right );
 
@@ -176,8 +183,10 @@ void Overlay_task()
     size_t cycle = 0;
     while( g_data.task_running ) {
         
-        // print overlay:
-        Print_overlay( cycle++ );
+        // print overlay (only if not in menus):
+        if( !gui_menu_shown() ) {
+            Print_overlay( cycle++ );
+        }
         
         // breathe a little to let other tasks do their job properly:
         msleep( 100 );
@@ -742,6 +751,8 @@ void Action__edit__add_focus_point()
 
     // insert new focus point:
     vector_insert( &g_data.store.focus_points, g_data.index, &focus_point );
+
+    // TODO if there's a point after the insertion, we need to update its distribution
         
     // save focus points:
     Save_data_store();
@@ -773,6 +784,8 @@ void Action__edit__set_current_lens_information()
         const Focus_point * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
         p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
     }
+
+    // TODO if there's a point after the insertion, we need also to update its distribution
     
     // save focus points:
     Save_data_store();
