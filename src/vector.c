@@ -38,8 +38,8 @@ void vector_reserve( vector * _p_vector, const size_t _count )
 // _p_data      pointer to the data to insert (NULL if removal)
 void _vector_swap( vector * _p_vector, const bool _insertion, const size_t _position, const void * const _p_data )
 {
-    // can insert before or at the tip of the vector:
-    ASSERT( _position <= _p_vector->count );
+    // can insert before or at the tip of the vector and remove only before the tip:
+    ASSERT( ( _insertion && ( _position <= _p_vector->count ) ) || ( !_insertion && ( _position < _p_vector->count ) ) );
     
     // allocate new vector:
     const size_t vector_count = _p_vector->count + ( _insertion ? 1 : -1 );

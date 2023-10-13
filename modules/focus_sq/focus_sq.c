@@ -9,23 +9,24 @@
 
 #include "focus_sq.h"
 
-// TODO the change between EDIT and PLAY modes is not obvious -> animate?
-// TODO need to recompute some distribution timing on the next sequence point (c.f. TODO in code)
-// TODO step deviation issues after movement seems quite big, why?
-// - may be better to not save the distribution but always recalculate it based over the real current position at the beginning of the move?
-// - maybe use an average step movement stored in double ?
-// TODO got an ASSERTion one time during calibration around vector_get() -> cannot reproduce, but better dig it
+
+// TODO Action__edit__remove_focus_point doesn't work (crash)
+// TODO user documentation
 
 
 // default data structure values:
 static Data g_data = {
     .task_running = false,
+    .screen_on = true,
     .index = 0,
     .lens_limits = {
         .first_focus_position = 0,
         .focus_position_normalizer = 0,
     },
     .display = {
+        // generic list of delimiters used in highlights:
+        .delimiters = { { " ", ">", "{", "(", "[" }, { " ", "<", "}", ")", "]" } },
+        .state_edited_timepoint_ms = 0,
         .state = STATE__INACTIVE,
         .transition_in_progress = false,
         .sequence_edited_timepoint_ms = 0,
@@ -78,19 +79,8 @@ char * Print_overlay__edit_play_content( const size_t _cycle )
 {
     // set up text content:
     static char content[ CONTENT_LENGTH + 1 ];
-    static const char * const p_edit[ 2 ][ 4 ] = { { " ", ">", "{", "(" }, { " ", "<", "}", ")" } };
     const char * p_edit_left = 0;
     const char * p_edit_right = 0;
-
-    // reset edit highlight timepoints, if needed:
-    int * const p_edit_timepoints[ 3 ] = { &g_data.display.sequence_edited_timepoint_ms, &g_data.display.focus_edited_timepoint_ms, &g_data.display.duration_edited_timepoint_ms };
-    const int current_clock_ms = get_ms_clock();
-    for( int i = 0; i < 3; i ++ ) {
-        int * const p_edit_timepoint = p_edit_timepoints[ i ];
-        if( *p_edit_timepoint != 0 && ( current_clock_ms - *p_edit_timepoint ) > HIGHLIGTH_DURATION_MS ) {
-            *p_edit_timepoint = 0;
-        }
-    }
 
     // sequence part:
     static char step[ CONTENT_LENGTH + 1 ];
@@ -100,24 +90,32 @@ char * Print_overlay__edit_play_content( const size_t _cycle )
     }
     else {
         const size_t pos = g_data.display.sequence_edited_timepoint_ms != 0 ? _cycle % 2 : 0;
-        p_edit_left = p_edit[ 0 ][ pos ];
-        p_edit_right = p_edit[ 1 ][ pos ];
+        p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
+        p_edit_right = g_data.display.delimiters[ 1 ][ pos ];
         snprintf( step, CONTENT_LENGTH, "%s% 2d%s /% 2d", p_edit_left, g_data.display.sequence_index, p_edit_right, g_data.display.sequence_length );
     }
 
     // focus part:
     static char focus[ CONTENT_LENGTH + 1 ];
-    const bool position_is_different = g_data.display.state == STATE__EDIT && Normalized_focus_position() != g_data.display.normalized_focus_position;
+    const bool position_is_different = g_data.display.state == STATE__EDIT && g_data.display.focus_distance_cm != lens_info.focus_dist;
     const size_t pos = g_data.display.transition_in_progress ? 3 : ( position_is_different ? ( _cycle % 2 ) << 1 : ( g_data.display.focus_edited_timepoint_ms != 0 ? _cycle % 2 : 0 ) );
-    p_edit_left = p_edit[ 0 ][ pos ];
-    p_edit_right = p_edit[ 1 ][ pos ];
+    p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
+    p_edit_right = g_data.display.delimiters[ 1 ][ pos ];
     const unsigned focus_distance_cm = g_data.display.transition_in_progress || position_is_different ? lens_info.focus_dist : g_data.display.focus_distance_cm;
     static char focus_distance_buffer[ CONTENT_LENGTH + 1 ];
     if( focus_distance_cm == INFINITE_FOCUS_DISTANCE_TRIGGER ) {
         snprintf( focus_distance_buffer, CONTENT_LENGTH, " inf. " );
     }
     else {
-        snprintf( focus_distance_buffer, CONTENT_LENGTH, "% 4dcm", focus_distance_cm );
+        // centimeter display:
+        if( focus_distance_cm < 100 ) {
+            snprintf( focus_distance_buffer, CONTENT_LENGTH, "% 4dcm", focus_distance_cm );
+        }
+        // or meter display:
+        else {
+            static char distance_buffer[ CONTENT_LENGTH + 1 ];
+            snprintf( focus_distance_buffer, CONTENT_LENGTH, "%sm", format_float_ex( ( double ) focus_distance_cm / ( double ) 100, 3, distance_buffer, CONTENT_LENGTH ) );
+        }
     }
     snprintf( focus, CONTENT_LENGTH, "%s%s%s", p_edit_left, focus_distance_buffer, p_edit_right );
 
@@ -128,10 +126,11 @@ char * Print_overlay__edit_play_content( const size_t _cycle )
     }
     else {
         const size_t pos = g_data.display.transition_in_progress ? 3 : ( g_data.display.duration_edited_timepoint_ms != 0 ? _cycle % 2 : 0 );
-        p_edit_left = p_edit[ 0 ][ pos ];
-        p_edit_right = p_edit[ 1 ][ pos ];
+        p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
+        p_edit_right = g_data.display.delimiters[ 1 ][ pos ];
         const double duration_s = g_data.display.duration_edited_timepoint_ms != 0 ? g_data.display.target_duration_s : g_data.display.duration_s;
-        snprintf( duration, CONTENT_LENGTH, "%s%ss%s", p_edit_left, format_float( duration_s, 3 ), p_edit_right );
+        static char duration_buffer[ CONTENT_LENGTH + 1 ];
+        snprintf( duration, CONTENT_LENGTH, "%s%ss%s", p_edit_left, format_float_ex( duration_s, 3, duration_buffer, CONTENT_LENGTH ), p_edit_right );
     }
 
     // content:
@@ -163,6 +162,16 @@ char * Print_overlay__content( const size_t _cycle )
 
 void Print_overlay( const size_t _cycle )
 {
+    // reset edit highlight timepoints, if needed:
+    int * const p_edit_timepoints[ 4 ] = { &g_data.display.state_edited_timepoint_ms, &g_data.display.sequence_edited_timepoint_ms, &g_data.display.focus_edited_timepoint_ms, &g_data.display.duration_edited_timepoint_ms };
+    const int current_clock_ms = get_ms_clock();
+    for( int i = 0; i < 4; i ++ ) {
+        int * const p_edit_timepoint = p_edit_timepoints[ i ];
+        if( *p_edit_timepoint != 0 && ( current_clock_ms - *p_edit_timepoint ) > HIGHLIGTH_DURATION_MS ) {
+            *p_edit_timepoint = 0;
+        }
+    }
+
     // header:
     static const char * p_headers[ 4 ] = { "    ", "edit", "play", "----" };
     static const char * const p_header_progress[ 6 ] = { " .oO", ".oOo", "oOo.", "Oo. ", "o. .", ". .o" };
@@ -170,7 +179,10 @@ void Print_overlay( const size_t _cycle )
     const size_t header_index = g_data.display.state < 3 ? g_data.display.state : 3;
 
     // print:
-    Print_bmp( "[%s] %s", p_headers[ header_index ], Print_overlay__content( _cycle ) );
+    const size_t pos = g_data.display.state_edited_timepoint_ms != 0 ? ( _cycle % 2 ) * 4 : 4;
+    const char * const p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
+    const char * const p_edit_right = g_data.display.delimiters[ 1 ][ pos ];
+    Print_bmp( "%s%s%s %s", p_edit_left, p_headers[ header_index ], p_edit_right, Print_overlay__content( _cycle ) );
 }
 
 
@@ -411,7 +423,8 @@ void Evaluate_step_size_speed( const bool _forward, const size_t _mode )
     wait_for_stabilized_focus_position();
     
     // dump step size speed:
-    Log( "{f} step size %d: %s steps per second\n", step_size, format_float( step_size_speed, 3 ) );
+    static char speed_buffer[ CONTENT_LENGTH + 1 ];
+    Log( "{f} step size %d: %s steps per second\n", step_size, format_float_ex( step_size_speed, 3, speed_buffer, CONTENT_LENGTH ) );
     g_data.store.modes[ _mode ].speed = step_size_speed;
     
     // how many steps are remaining to reach the initial destination?
@@ -528,11 +541,8 @@ Distribution Distribute_modes( const size_t _step_range, const double _target_du
 }
 
 
-double Play_distribution( const Distribution * const _p_distribution, const bool _forward )
+void Play_distribution( const Distribution * const _p_distribution, const bool _forward )
 {
-    // get timepoint before the move:
-    const int t_before_ms = get_ms_clock();
-    
     // what's the greatest count value in the distribution?
     size_t max_count = 0;
     for( int i = 0; i < 3; i++ ) {
@@ -600,9 +610,6 @@ double Play_distribution( const Distribution * const _p_distribution, const bool
         // cycle increment:
         cycle++;
     }
-
-    // return the real duration of the distribution:
-    return ( double ) ( get_ms_clock() - t_before_ms ) / ( double ) 1000.0;
 }
 
 
@@ -612,7 +619,6 @@ void Go_to()
     g_data.display.transition_in_progress = true;
 
     // read focus point data:
-    const unsigned current_focus_position = Normalized_focus_position();
     const Focus_point * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
 
     // setup displays:
@@ -621,16 +627,53 @@ void Go_to()
     g_data.display.focus_distance_cm = p_focus_point->distance_cm;
     g_data.display.target_duration_s = p_focus_point->distribution.duration_s;
     g_data.display.duration_s = p_focus_point->distribution.duration_s;
+    
+    // get timepoint before the move:
+    const int t_before_ms = get_ms_clock();
 
     // play distribution:
-    const double real_duration_s = Play_distribution( &p_focus_point->distribution, p_focus_point->normalized_position > current_focus_position );
+    Play_distribution( &p_focus_point->distribution, p_focus_point->normalized_position > Normalized_focus_position() );
 
-    // wait for current stabilized focus position and get real focus position:
+    // real duration of the distribution:
+    const double real_duration_s = ( double ) ( get_ms_clock() - t_before_ms ) / ( double ) 1000.0;
+
+    // wait for current stabilized focus position:
     wait_for_stabilized_focus_position();
-    const unsigned real_focus_position = Normalized_focus_position();
 
-    // dump deviations:
-    Log( "{f} deviations: %d steps, %ss\n", ( int ) real_focus_position - ( int ) p_focus_point->normalized_position, format_float( real_duration_s - p_focus_point->distribution.duration_s, 3 ) );
+    // get target and real focus step values:
+    const int target_step = ( int ) Closest_step_from_position( p_focus_point->normalized_position );
+    const unsigned real_focus_position = Normalized_focus_position();
+    const int real_step = ( int ) Closest_step_from_position( real_focus_position );
+    unsigned corrected_real_focus_position = real_focus_position;
+
+    // correct position only if needed:
+    if( real_step != target_step ) {
+
+        // finish the move to reach exactly the focus point:
+        const int range = target_step - real_step;
+        lens_focus_ex( ABS( range ), 1, range > 0, false, 0 );
+
+        // wait for current stabilized focus position:
+        wait_for_stabilized_focus_position();
+
+        // get corrected real focus position:
+        corrected_real_focus_position = Normalized_focus_position();
+    }
+
+    // final position deviation:
+    const int deviation_after = ( int ) p_focus_point->normalized_position - ( int ) corrected_real_focus_position;
+
+    // dump deviation without correction:
+    static char deviation_buffer[ CONTENT_LENGTH + 1 ];
+    const char * const p_duration_deviation = format_float_ex( real_duration_s - p_focus_point->distribution.duration_s, 3, deviation_buffer, CONTENT_LENGTH );
+    if( real_step == target_step ) {
+        Log( "{f} deviations: %d, %ss\n", deviation_after, p_duration_deviation );
+    }
+    // dump corrected deviation:
+    else {
+        const int deviation_before = ( int ) p_focus_point->normalized_position - ( int ) real_focus_position;
+        Log( "{f} deviations: (%d) %d corrected, %ss\n", deviation_before, deviation_after, p_duration_deviation );
+    }
     
     // transition finished:
     g_data.display.transition_in_progress = false;
@@ -641,9 +684,6 @@ void Go_to_asap()
 {
     // transition:
     g_data.display.transition_in_progress = true;
-
-    // wait for current stabilized focus position:
-    wait_for_stabilized_focus_position();
 
     // read current focus position:
     const unsigned current_focus_position = Normalized_focus_position();
@@ -665,6 +705,24 @@ void Go_to_asap()
 
     // play distribution:
     Play_distribution( &distribution, range > 0 );
+
+    // wait for current stabilized focus position:
+    wait_for_stabilized_focus_position();
+
+    // get real focus step values:
+    const int target_step = ( int ) Closest_step_from_position( p_focus_point->normalized_position );
+    const int real_step = ( int ) Closest_step_from_position( Normalized_focus_position() );
+
+    // correct position only if needed:
+    if( real_step != target_step ) {
+
+        // finish the move to reach exactly the focus point:
+        const int range = target_step - real_step;
+        lens_focus_ex( ABS( range ), 1, range > 0, false, 0 );
+
+        // wait for current stabilized focus position:
+        wait_for_stabilized_focus_position();
+    }
     
     // transition finished:
     g_data.display.transition_in_progress = false;
@@ -676,6 +734,7 @@ void Go_to_asap()
 void Action__toggle_mode()
 {
     // cycle between inactive, edit & play:
+    g_data.display.state_edited_timepoint_ms = get_ms_clock();
     g_data.display.state++;
     if( g_data.display.state > STATE__PLAY ) {
         g_data.display.state = STATE__INACTIVE;
@@ -752,7 +811,11 @@ void Action__edit__add_focus_point()
     // insert new focus point:
     vector_insert( &g_data.store.focus_points, g_data.index, &focus_point );
 
-    // TODO if there's a point after the insertion, we need to update its distribution
+    // if needed, we have to recompute the related distribution of the point after the one being added:
+    if( g_data.index < g_data.store.focus_points.count - 1 ) {
+        Focus_point * p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
+        p_next_focus_point->distribution = Compute_distribution_between( focus_point.normalized_position, p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
+    }
         
     // save focus points:
     Save_data_store();
@@ -785,7 +848,11 @@ void Action__edit__set_current_lens_information()
         p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
     }
 
-    // TODO if there's a point after the insertion, we need also to update its distribution
+    // if needed, we have to recompute the related distribution of the point after the one being updated:
+    if( g_data.index < g_data.store.focus_points.count - 1 ) {
+        Focus_point * p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
+        p_next_focus_point->distribution = Compute_distribution_between( p_focus_point->normalized_position, p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
+    }
     
     // save focus points:
     Save_data_store();
@@ -802,6 +869,7 @@ void Action__edit__set_current_lens_information()
 void Action__edit__remove_focus_point()
 {
     // nothing to do if we're on the first point:
+    // TODO why? we cannot remove th current point?
     if( g_data.index == 0 ) {
         return;
     }
@@ -811,6 +879,7 @@ void Action__edit__remove_focus_point()
 
     // if needed, we have to recompute the related distribution of the point after the one just removed:
     if( g_data.index < g_data.store.focus_points.count ) {
+        // TODO no more 'previous' point potentially
         const Focus_point * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
         Focus_point * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
         p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
@@ -820,6 +889,7 @@ void Action__edit__remove_focus_point()
     Save_data_store();
 
     // go to previous point:
+    // TODO it depends
     g_data.index--;
 
     // go to new position asap:
@@ -897,7 +967,7 @@ void Action__edit__decrease_transition_speed()
 
 void Action__play__go_to_next_focus_point()
 {
-    // check for limits:
+    // increase index (or loop):
     if( g_data.index == g_data.store.focus_points.count - 1 ) {
         return;
     }

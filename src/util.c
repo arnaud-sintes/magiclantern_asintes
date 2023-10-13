@@ -49,10 +49,3 @@ char * format_float_ex( const double _value, const int _digits, char * _buffer, 
     snprintf( _buffer, _buffer_len - 1, "%s%d.%s", signs[ _value < 0 ? 1 : 0 ], left, right_buffer );
     return _buffer;
 }
-
-
-char * format_float( const double _value, const int _digits )
-{
-    static char buffer[ 64 ];
-    return format_float_ex( _value, _digits, buffer, 63 );
-}

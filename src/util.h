@@ -40,8 +40,5 @@ int bin_search(int lo, int hi, CritFunc crit);
 // return a string pointer
 char * format_float_ex( const double _value, const int _digits, char * _buffer, const size_t _buffer_len );
 
-// format a float value as a text, using internal buffer
-char * format_float( const double _value, const int _digits );
-
 
 #endif

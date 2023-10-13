@@ -75,7 +75,7 @@ The *focus distances* being always absolute, we can display it indicatively (bec
 
 ### Issue with *step size* lens rotation *steps*
 
-This work perfectly when only moving the lens rotor using **step sizes of 1**, but when using a **step size of 2** and **3** we can see the **effective rotor lens step** performed by the camera are respectively of **4** and **26 steps **(averaged).
+This work perfectly when only moving the lens rotor using **step sizes of 1**, but when using a **step size of 2** and **3** we can see the **effective rotor lens step** performed by the camera are respectively of **4** and **26 steps** (averaged).
 
 > ❌ the correlation between the *step size* value and the effective rotor *lens step* **is not linear** and specific per lens (and camera?)
 

@@ -15,6 +15,8 @@
 // information to be displayed in LV:
 typedef struct
 {
+    const char * const delimiters[ 2 ][ 5 ];
+    int state_edited_timepoint_ms;          // if not 0, the state was just edited
     size_t state;                           // current display state
     bool transition_in_progress;            // is a lens focus transition currently in progress?
     int sequence_edited_timepoint_ms;       // if not 0, the sequence was just edited
@@ -192,6 +194,9 @@ void Evaluate_step_size( const size_t _mode );
 void Evaluate_step_size_speed( const bool _forward, const size_t _mode );
 
 
+// currently the wait_for_stabilized_focus_position() took 200ms:
+#define STABILIZATION_DURATION 0.2
+
 // compute a distribution between two given focus positions:
 Distribution Compute_distribution_between( const unsigned _focus_position_1, const unsigned _focus_position_2, const double _duration_s, int * _p_range );
 
@@ -202,7 +207,7 @@ Distribution Distribute_modes( const size_t _step_range, const double _target_du
 double Distribution_duration( const Distribution * const  _p_distribution );
 
 // play a given distribution:
-double Play_distribution( const Distribution * const _p_distribution, const bool _forward );
+void Play_distribution( const Distribution * const _p_distribution, const bool _forward );
 
 
 // go to a position by playing a computed distribution:
