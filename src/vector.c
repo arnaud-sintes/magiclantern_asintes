@@ -57,10 +57,10 @@ void _vector_swap( vector * _p_vector, const bool _insertion, const size_t _posi
     }
 
     // copy right part of current vector in the new vector, if needed:
-    const size_t right_count = _p_vector->count - _position;
+    const size_t dst_position = _position + ( _insertion ? 1 : 0 );
+    const size_t right_count = vector_count - dst_position;
     if( right_count != 0 ) {
-        const size_t dst_position = _insertion ? _position + 1 : _position;
-        const size_t src_position = _insertion ? _position : _position + 1;
+        const size_t src_position = _position + ( _insertion ? 0 : 1 );
         memcpy( p_data + ( dst_position * _p_vector->data_size ), _p_vector->p_data + ( src_position * _p_vector->data_size ), right_count * _p_vector->data_size );
     }
 

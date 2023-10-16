@@ -276,15 +276,26 @@ unsigned Normalized_focus_position()
 
 size_t Closest_step_from_position( const unsigned _focus_position )
 {
-    size_t step = 0;
-    while( step < g_data.store.focus_positions.count && *( ( unsigned * ) vector_get( &g_data.store.focus_positions, step ) ) < _focus_position ) {
-        step++;
+    // search for an exact or greater match:
+    for( size_t step = 0; step < g_data.store.focus_positions.count; step++ ) {
+        const unsigned focus_position = *( ( unsigned * ) vector_get( &g_data.store.focus_positions, step ) );
+
+        // lesser than, continue:
+        if( focus_position < _focus_position ) {
+            continue;
+        }
+
+        // perfect match:
+        if( focus_position == _focus_position ) {
+            return step;
+        }
+
+        // greater match, return the closest step before:
+        return ( step == 0 ) ? 0 : step - 1;
     }
-    // the match can be exact:
-    if( *( ( unsigned * ) vector_get( &g_data.store.focus_positions, step ) ) == _focus_position )
-        return step;
-    // ...or not, then take the closest step before:
-    return step - 1;
+    
+    // reached limit, return last possible step:
+    return g_data.store.focus_positions.count - 1;
 }
 
 
@@ -874,6 +885,11 @@ void Action__edit__remove_focus_point()
     // remove current point:
     vector_erase( &g_data.store.focus_points, g_data.index );
 
+    // if it was the latest point of the list, go to previous point:
+    if( g_data.index == g_data.store.focus_points.count ) {
+        g_data.index--;
+    }
+
     // get current focus point for potential subsequent distribution recomputation:
     struct focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
 
@@ -891,11 +907,6 @@ void Action__edit__remove_focus_point()
     
     // save focus points:
     Save_data_store();
-
-    // if it was the latest point of the list, go to previous point:
-    if( g_data.index == g_data.store.focus_points.count ) {
-        g_data.index--;
-    }
 
     // go to new position asap:
     Go_to_asap();
