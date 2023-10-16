@@ -1,6 +1,19 @@
-# Focus sequencing
+# Focus sequencing module
 
-## Issues and problem solving
+## Purpose
+
+*Focus sequencing* is a [Magic Lantern](https://magiclantern.fm/) **module** helping to solve the following situations:
+
+- We cannot use an external *focus puller monitor* because we're recording videos using **crop modes**, which are currently incompatible with the camera *HDMI output*
+- We're recording videos as a **single camera operator** without the assistance of a *focus puller* and the sequence is too complex to deal with *manual focusing*
+
+👉 *Cinematographer mode* provides then a way to easily **record multiple lens focus points**, so we can prepare a sequence including camera or target movements and subsequently **replay** them as we're recording videos, using a simple push button to switch to a point to the next one in the sequence.
+
+> **Typical use case**: I'm a *single camera operator* recording a video using *crop modes* and my sequence is a combination of a *dolly-in* movement (with a speed ramp) and a horizontal camera rotation used to keep an object at the center of the composition.
+>
+> 👉 While I'm rehearsing the camera track and movements, I'll record three or four intermediate focus points in a sequence with proper speed transition settings, so my targeted object is always perfectly focused and I'll replay the focus sequence while I'm finally recording the scene, going forward from a focus point to the next one by pushing a single button.
+
+## Technical issues and workarounds
 
 ### State of the art
 
@@ -92,3 +105,29 @@ The same issue occurs when checking the related speeds per queried *step sizes*:
 👉 We need then to evaluate both averaged **effective rotor lens step** and **rotation speed** for each possible ***step size*** value.
 
 When doing a *lens focus transition* operation using a target duration, we can now compute a proper ✅ **distribution of the different *step size* and *wait calls*** so we may **reach *exactly* the target position** with a **duration *as close as possible* as queried** by the user using the **smoothest focus transition** possible, by taking in account both the *effective rotor lens* stepping and the *step size speeds*.
+
+## How to install
+
+Because we rely over a specific *lens_focus* function, there's currently no way to use this module outside specific builds that will include this function.
+
+Our best shot is then to use one specific ***crop_rec_4k_mlv_snd_isogain_1x3_presets_ultrafast_focussq*** *Magic Lantern* build [available in my personal repository](https://github.com/arnaud-sintes/magiclantern_asintes/releases), which is basically an up-to-date fork of Danne's one (with also the *[ultrafast framed preview](https://www.magiclantern.fm/forum/index.php?topic=26998)* feature).
+
+Using this build, the ***focus_sq*** module is simply **embedded and activated by default**.
+
+## How to use
+
+TODO
+
+### Toggle between modes
+
+### Calibration
+
+### Edit focus sequence
+
+### Replay focus sequence
+
+### Battery saving
+
+### Save and reload
+
+## Summary

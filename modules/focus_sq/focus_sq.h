@@ -13,66 +13,63 @@
 
 
 // information to be displayed in LV:
-typedef struct
+struct display_t
 {
-    const char * const delimiters[ 2 ][ 5 ];
-    int state_edited_timepoint_ms;          // if not 0, the state was just edited
-    size_t state;                           // current display state
-    bool transition_in_progress;            // is a lens focus transition currently in progress?
-    int sequence_edited_timepoint_ms;       // if not 0, the sequence was just edited
-    size_t sequence_index;                  // current/target sequence index
-    size_t sequence_length;                 // sequence length
-    int focus_edited_timepoint_ms;          // if not 0, the focus position in the sequence was just edited
-    unsigned normalized_focus_position;     // normalized focus position as set in the sequence
-    unsigned focus_distance_cm;             // focus position as set in the sequence
-    int duration_edited_timepoint_ms;       // if not 0, the transition duration in the sequence was just edited
-    double target_duration_s;               // target duration (second) as set in the sequence
-    double duration_s;                      // related expected duration (second)
-}
-Display;
+    const char * const delimiters[ 2 ][ 5 ];    // generic list of delimiters used in highlights
+    int state_edited_timepoint_ms;              // if not 0, the state was just edited
+    size_t state;                               // current display state
+    bool transition_in_progress;                // is a lens focus transition currently in progress?
+    int sequence_edited_timepoint_ms;           // if not 0, the sequence was just edited
+    size_t sequence_index;                      // current/target sequence index
+    size_t sequence_length;                     // sequence length
+    int focus_edited_timepoint_ms;              // if not 0, the focus position in the sequence was just edited
+    unsigned normalized_focus_position;         // normalized focus position as set in the sequence
+    unsigned focus_distance_cm;                 // focus position as set in the sequence
+    int duration_edited_timepoint_ms;           // if not 0, the transition duration in the sequence was just edited
+    double target_duration_s;                   // target duration (second) as set in the sequence
+    double duration_s;                          // related expected duration (second)
+};
 
 
 // single mode configuration:
-typedef struct
+struct step_mode_t
 {
-    size_t steps;                           // fixed step count taken in a single 'do' call
-    double speed;                           // mode speed in steps per second
-}
-Mode;
+    size_t steps;                               // fixed step count taken in a single 'do' call
+    double speed;                               // mode speed in steps per second
+};
 
 
 // possible mode indexes:
-#define MODE_3  0                           // step_size = 3
-#define MODE_2  1                           // step_size = 2
-#define MODE_1  2                           // step_size = 1
+#define MODE_3  0                               // step_size = 3
+#define MODE_2  1                               // step_size = 2
+#define MODE_1  2                               // step_size = 1
 
 
 // computed mode call count distribution:
-typedef struct
+struct distribution_t
 {
-    size_t mode_call_counts[ 3 ];           // distribution of mode call count
-    double wait;                            // how much we need to wait (in second), can be negative
-    double duration_s;                      // expected distribution duration (in second)
-}
-Distribution;
+    size_t mode_call_counts[ 3 ];               // distribution of mode call count
+    double wait;                                // how much we need to wait (in second), can be negative
+    double duration_s;                          // expected distribution duration (in second)
+};
 
 
 // single job structure:
-typedef struct {
-    size_t remaining_call_counts;           // how many remaining calls to do
-    size_t count_cycle;                     // the related count cycle of the job
-}
-Job;
+struct job_t
+{
+    size_t remaining_call_counts;               // how many remaining calls to do
+    size_t count_cycle;                         // the related count cycle of the job
+};
 
 
 // single focus point:
-typedef struct {
-    unsigned normalized_position;           // normalized focus position captured when setting the point
-    unsigned distance_cm;                   // focus distance captured when setting the point
-    double duration_s;                      // target duration (second)
-    Distribution distribution;              // related distribution
-}
-Focus_point;
+struct focus_point_t
+{
+    unsigned normalized_position;               // normalized focus position captured when setting the point
+    unsigned distance_cm;                       // focus distance captured when setting the point
+    double duration_s;                          // target duration (second)
+    struct distribution_t distribution;         // related distribution
+};
 
 
 // maximum length of the lens name:
@@ -83,36 +80,33 @@ Focus_point;
 
 
 // data to be stored on disc:
-typedef struct
+struct store_t
 {
-    char lens_name[ LENS_NAME_MAX_LENGTH ]; // lens name
-    vector /*<unsigned>*/ focus_positions;  // focus positions
-    Mode modes[ 3 ];                        // modes setup
-    vector /*<Focus_point>*/ focus_points;  // the focus point sequence
-}
-Store;
+    char lens_name[ LENS_NAME_MAX_LENGTH ];     // lens name
+    vector /*<unsigned>*/ focus_positions;      // focus positions
+    struct step_mode_t modes[ 3 ];              // modes setup
+    vector /*<focus_point_t>*/ focus_points;    // the focus point sequence
+};
 
 
 // lens limits:
-typedef struct
+struct limits_t
 {
-    int first_focus_position;               // first known focus position
-    int focus_position_normalizer;          // focus position normalizer
-}
-Limits;
+    int first_focus_position;                   // first known focus position
+    int focus_position_normalizer;              // focus position normalizer
+};
 
 
 // main data structure:
-typedef struct
+struct data_t
 {
-    bool task_running;                      // is task currently running?
-    bool screen_on;                         // is the LV screen on or off? (screen saving)
-    size_t index;                           // current index in the focus point sequence
-    Limits lens_limits;                     // lens limits
-    Display display;                        // display data
-    Store store;                            // data store
-}
-Data;
+    bool task_running;                          // is task currently running?
+    bool screen_on;                             // is the LV screen on or off? (screen saving)
+    size_t index;                               // current index in the focus point sequence
+    struct limits_t lens_limits;                // lens limits
+    struct display_t display;                   // display data
+    struct store_t store;                       // data store
+};
 
 
 // log something in the console:
@@ -198,16 +192,16 @@ void Evaluate_step_size_speed( const bool _forward, const size_t _mode );
 #define STABILIZATION_DURATION 0.2
 
 // compute a distribution between two given focus positions:
-Distribution Compute_distribution_between( const unsigned _focus_position_1, const unsigned _focus_position_2, const double _duration_s, int * _p_range );
+struct distribution_t Compute_distribution_between( const unsigned _focus_position_1, const unsigned _focus_position_2, const double _duration_s, int * _p_range );
 
 // compute a distribution of the modes to cover a given range as close as possible as a given duration in second:
-Distribution Distribute_modes( const size_t _step_range, const double _target_duration_s );
+struct distribution_t Distribute_modes( const size_t _step_range, const double _target_duration_s );
 
 // compute the expected duration of a given duration:
-double Distribution_duration( const Distribution * const  _p_distribution );
+double Distribution_duration( const struct distribution_t * const  _p_distribution );
 
 // play a given distribution:
-void Play_distribution( const Distribution * const _p_distribution, const bool _forward );
+void Play_distribution( const struct distribution_t * const _p_distribution, const bool _forward );
 
 
 // go to a position by playing a computed distribution:

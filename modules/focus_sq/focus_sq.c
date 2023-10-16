@@ -10,12 +10,11 @@
 #include "focus_sq.h"
 
 
-// TODO Action__edit__remove_focus_point doesn't work (crash)
 // TODO user documentation
 
 
 // default data structure values:
-static Data g_data = {
+static struct data_t g_data = {
     .task_running = false,
     .screen_on = true,
     .index = 0,
@@ -24,7 +23,6 @@ static Data g_data = {
         .focus_position_normalizer = 0,
     },
     .display = {
-        // generic list of delimiters used in highlights:
         .delimiters = { { " ", ">", "{", "(", "[" }, { " ", "<", "}", ")", "]" } },
         .state_edited_timepoint_ms = 0,
         .state = STATE__INACTIVE,
@@ -213,9 +211,9 @@ void Save_data_store()
     FIO_WriteFile( p_file, g_data.store.lens_name, sizeof( char ) * LENS_NAME_MAX_LENGTH );
     FIO_WriteFile( p_file, &g_data.store.focus_positions.count, sizeof( size_t ) );
     FIO_WriteFile( p_file, g_data.store.focus_positions.p_data, sizeof( unsigned ) * g_data.store.focus_positions.count );
-    FIO_WriteFile( p_file, g_data.store.modes, sizeof( Mode ) * 3 );
+    FIO_WriteFile( p_file, g_data.store.modes, sizeof( struct step_mode_t ) * 3 );
     FIO_WriteFile( p_file, &g_data.store.focus_points.count, sizeof( size_t ) );
-    FIO_WriteFile( p_file, g_data.store.focus_points.p_data, sizeof( Focus_point ) * g_data.store.focus_points.count );
+    FIO_WriteFile( p_file, g_data.store.focus_points.p_data, sizeof( struct focus_point_t ) * g_data.store.focus_points.count );
     FIO_CloseFile( p_file );
 }
 
@@ -230,10 +228,10 @@ void Load_data_store()
     FIO_ReadFile( p_file, &g_data.store.focus_positions.count, sizeof( size_t ) );
     vector_reserve( &g_data.store.focus_positions, g_data.store.focus_positions.count );
     FIO_ReadFile( p_file, g_data.store.focus_positions.p_data, sizeof( unsigned ) * g_data.store.focus_positions.count );
-    FIO_ReadFile( p_file, g_data.store.modes, sizeof( Mode ) * 3 );
+    FIO_ReadFile( p_file, g_data.store.modes, sizeof( struct step_mode_t ) * 3 );
     FIO_ReadFile( p_file, &g_data.store.focus_points.count, sizeof( size_t ) );
     vector_reserve( &g_data.store.focus_points, g_data.store.focus_points.count );
-    FIO_ReadFile( p_file, g_data.store.focus_points.p_data, sizeof( Focus_point ) * g_data.store.focus_points.count );
+    FIO_ReadFile( p_file, g_data.store.focus_points.p_data, sizeof( struct focus_point_t ) * g_data.store.focus_points.count );
     FIO_CloseFile( p_file );
 }
 
@@ -437,7 +435,7 @@ void Evaluate_step_size_speed( const bool _forward, const size_t _mode )
 }
 
 
-Distribution Compute_distribution_between( const unsigned _focus_position_1, const unsigned _focus_position_2, const double _duration_s, int * _p_range )
+struct distribution_t Compute_distribution_between( const unsigned _focus_position_1, const unsigned _focus_position_2, const double _duration_s, int * _p_range )
 {
     const int step_1 = ( int ) Closest_step_from_position( _focus_position_1 );
     const int step_2 = ( int ) Closest_step_from_position( _focus_position_2 );
@@ -449,7 +447,7 @@ Distribution Compute_distribution_between( const unsigned _focus_position_1, con
 }
 
 
-double Distribution_duration( const Distribution * const  _p_distribution )
+double Distribution_duration( const struct distribution_t * const  _p_distribution )
 {
     double duration_s = 0;
     for( int i = 0; i < 3; i++ ) {
@@ -461,9 +459,9 @@ double Distribution_duration( const Distribution * const  _p_distribution )
 }
 
 
-Distribution Distribute_modes( const size_t _step_range, const double _target_duration_s )
+struct distribution_t Distribute_modes( const size_t _step_range, const double _target_duration_s )
 {
-    Distribution distribution = { { 0, 0, 0 }, .wait = 0 };
+    struct distribution_t distribution = { { 0, 0, 0 }, .wait = 0 };
 
     // compute possible durations depending of modes:
     double durations[ 3 ];
@@ -506,7 +504,7 @@ Distribution Distribute_modes( const size_t _step_range, const double _target_du
             // the first speed is the reference:
             size_t range = _step_range;
             int _offset = offset;
-            Distribution current_distribution = { { 0, 0, 0 }, .wait = 0 };
+            struct distribution_t current_distribution = { { 0, 0, 0 }, .wait = 0 };
             int mode_call_counts_index = offset;
             current_distribution.mode_call_counts[ mode_call_counts_index++ ] = count;
 
@@ -541,7 +539,7 @@ Distribution Distribute_modes( const size_t _step_range, const double _target_du
 }
 
 
-void Play_distribution( const Distribution * const _p_distribution, const bool _forward )
+void Play_distribution( const struct distribution_t * const _p_distribution, const bool _forward )
 {
     // what's the greatest count value in the distribution?
     size_t max_count = 0;
@@ -554,7 +552,7 @@ void Play_distribution( const Distribution * const _p_distribution, const bool _
     // prepare jobs:
     // NOTE: 1-3 jobs are for lens_focus_ex calls with step_size 1, 2, 3
     // 4th job is for msleep( sleep_duration_ms ) calls
-    Job jobs[ 4 ] = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } };
+    struct job_t jobs[ 4 ] = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } };
     for( int i = 0; i < 3; i++ ) {
         if( _p_distribution->mode_call_counts[ i ] != 0 ) {
             jobs[ i ].remaining_call_counts = _p_distribution->mode_call_counts[ i ];
@@ -619,7 +617,7 @@ void Go_to()
     g_data.display.transition_in_progress = true;
 
     // read focus point data:
-    const Focus_point * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
+    const struct focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
 
     // setup displays:
     g_data.display.sequence_index = g_data.index + 1;
@@ -689,11 +687,11 @@ void Go_to_asap()
     const unsigned current_focus_position = Normalized_focus_position();
 
     // read focus point data:
-    const Focus_point * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
+    const struct focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
     
     // compute asap distribution:
     int range = 0;
-    const Distribution distribution = Compute_distribution_between( current_focus_position, p_focus_point->normalized_position, 0, &range );
+    const struct distribution_t distribution = Compute_distribution_between( current_focus_position, p_focus_point->normalized_position, 0, &range );
 
     // setup displays:
     g_data.display.sequence_index = g_data.index + 1;
@@ -787,7 +785,7 @@ void Action__toggle_camera_display()
 void Action__edit__add_focus_point()
 {        
     // new focus point information:
-    Focus_point focus_point = {
+    struct focus_point_t focus_point = {
         .normalized_position = Normalized_focus_position(),
         .distance_cm = lens_info.focus_dist,
         .duration_s = 0
@@ -795,7 +793,7 @@ void Action__edit__add_focus_point()
 
     // compute new distribution if needed:
     if( g_data.store.focus_points.count > 0 ) {
-        const Focus_point * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
+        const struct focus_point_t * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
         focus_point.distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, focus_point.normalized_position, focus_point.duration_s, NULL );
 
         // set the default target duration as close as possible as the best possible effort, using 100ms approximation:
@@ -813,7 +811,7 @@ void Action__edit__add_focus_point()
 
     // if needed, we have to recompute the related distribution of the point after the one being added:
     if( g_data.index < g_data.store.focus_points.count - 1 ) {
-        Focus_point * p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
+        struct focus_point_t * p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
         p_next_focus_point->distribution = Compute_distribution_between( focus_point.normalized_position, p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
     }
         
@@ -836,7 +834,7 @@ void Action__edit__add_focus_point()
 void Action__edit__set_current_lens_information()
 {
     // get current focus point information:
-    Focus_point * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
+    struct focus_point_t * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
 
     // update lens information:
     p_focus_point->normalized_position = Normalized_focus_position();
@@ -844,13 +842,13 @@ void Action__edit__set_current_lens_information()
 
     // re-compute distribution if needed:
     if( g_data.index > 0 ) {
-        const Focus_point * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
+        const struct focus_point_t * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
         p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
     }
 
     // if needed, we have to recompute the related distribution of the point after the one being updated:
     if( g_data.index < g_data.store.focus_points.count - 1 ) {
-        Focus_point * p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
+        struct focus_point_t * const p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
         p_next_focus_point->distribution = Compute_distribution_between( p_focus_point->normalized_position, p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
     }
     
@@ -868,29 +866,36 @@ void Action__edit__set_current_lens_information()
 
 void Action__edit__remove_focus_point()
 {
-    // nothing to do if we're on the first point:
-    // TODO why? we cannot remove th current point?
-    if( g_data.index == 0 ) {
+    // nothing to do if only one point remains:
+    if( g_data.store.focus_points.count == 1 ) {
         return;
     }
 
-    // remove point:
+    // remove current point:
     vector_erase( &g_data.store.focus_points, g_data.index );
 
-    // if needed, we have to recompute the related distribution of the point after the one just removed:
-    if( g_data.index < g_data.store.focus_points.count ) {
-        // TODO no more 'previous' point potentially
-        const Focus_point * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
-        Focus_point * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
+    // get current focus point for potential subsequent distribution recomputation:
+    struct focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
+
+    // we're not on the first point, we need to recompute the distribution:
+    if( g_data.index != 0 ) {
+        struct focus_point_t * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
         p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
+    }
+
+    // if needed, we have to recompute the related distribution of the point after the one just removed:
+    if( g_data.index < g_data.store.focus_points.count - 1 ) {
+        struct focus_point_t * const p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
+        p_next_focus_point->distribution = Compute_distribution_between( p_focus_point->normalized_position, p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
     }
     
     // save focus points:
     Save_data_store();
 
-    // go to previous point:
-    // TODO it depends
-    g_data.index--;
+    // if it was the latest point of the list, go to previous point:
+    if( g_data.index == g_data.store.focus_points.count ) {
+        g_data.index--;
+    }
 
     // go to new position asap:
     Go_to_asap();
@@ -899,7 +904,7 @@ void Action__edit__remove_focus_point()
 
 void Action__edit__go_to_next_focus_point()
 {
-    // increase index (or loop):
+    // increase index (or loop to beginning):
     if( g_data.index++ == g_data.store.focus_points.count - 1 ) {
         g_data.index = 0;
     }
@@ -911,7 +916,7 @@ void Action__edit__go_to_next_focus_point()
 
 void Action__edit__go_to_previous_focus_point()
 {
-    // decrease index (or loop):
+    // decrease index (or loop to end):
     if( g_data.index-- == 0 ) {
         g_data.index = g_data.store.focus_points.count - 1;
     }
@@ -929,7 +934,7 @@ void Action__edit__update_transition_speed( const bool _increase )
     }
 
     // get current focus point information:
-    Focus_point * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
+    struct focus_point_t * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
 
     // check for limits:
     if( ( _increase && p_focus_point->duration_s > ( double ) 9.8 ) || ( !_increase && p_focus_point->duration_s < ( double ) 0.1 ) ) {
@@ -940,7 +945,7 @@ void Action__edit__update_transition_speed( const bool _increase )
     p_focus_point->duration_s += ( double ) FOCUS_POINT_INCREMENT_S * ( _increase ? 1 : -1 );
 
     // recompute distribution:
-    const Focus_point * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
+    const struct focus_point_t * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
     p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
     
     // save focus points:
@@ -1066,7 +1071,7 @@ unsigned int Init()
 
     // init vectors:
     g_data.store.focus_positions = vector_create( sizeof( unsigned ) );
-    g_data.store.focus_points = vector_create( sizeof( Focus_point ) );
+    g_data.store.focus_points = vector_create( sizeof( struct focus_point_t ) );
 
     // load data:
     Load_data_store();
