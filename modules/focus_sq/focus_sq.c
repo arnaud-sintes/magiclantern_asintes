@@ -10,6 +10,10 @@
 #include "focus_sq.h"
 
 
+// TODO fix const usage
+// TODO group #define in a struct when possible
+// TODO fix styling
+
 // TODO user documentation / video demonstration:
 // - focus sequence activation via ML menu
 // - switch from "inactive" to "edit" mode (INFO)
@@ -132,33 +136,39 @@ char * fsq_print_overlay__edit_play_content( const size_t _cycle )
         : g_data.display.focus_distance_cm;
     static char focus_distance_buffer[ FSQ_CONTENT_LENGTH + 1 ];
     if( focus_distance_cm == FSQ_INFINITE_FOCUS_DISTANCE_TRIGGER ) {
-        snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, " inf. " );
+        snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, "  inf. " );
     }
     else {
         // centimeter display:
         if( focus_distance_cm < 100 ) {
-            snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, "% 4dcm", focus_distance_cm );
+            snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, "% 5dcm", focus_distance_cm );
         }
         // or meter display:
         else {
             static char distance_buffer[ FSQ_CONTENT_LENGTH + 1 ];
             const double focus_distance_m = ( double ) focus_distance_cm / ( double ) 100;
-            snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, "%sm",
+            snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, ( focus_distance_m < 10 )? " %sm" : "%sm",
                 format_float_ex( focus_distance_m, 3, distance_buffer, FSQ_CONTENT_LENGTH ) );
         }
     }
     snprintf( focus, FSQ_CONTENT_LENGTH, "%s%s%s", p_edit_left, focus_distance_buffer, p_edit_right );
 
     // duration part:
+    const int current_clock_ms = get_ms_clock();
+    if( g_data.display.transition_target_ms != 0 ) {
+        if( current_clock_ms > g_data.display.transition_target_ms ) {
+            g_data.display.transition_target_ms = 0;
+        }
+    }
     static char duration[ FSQ_CONTENT_LENGTH + 1 ];
-     if( ( g_data.display.transition_target_ms == 0 ) &&
+    if( ( g_data.display.transition_target_ms == 0 ) &&
         ( g_data.display.state == fsq_play ||
             ( g_data.display.state == fsq_edit && g_data.display.sequence_index == 1 ) ) ) {
         snprintf( duration, FSQ_CONTENT_LENGTH, "" );
     }
     else {
         size_t pos = 3;
-        if( ( g_data.display.transition_target_ms == 0 ) ) {
+        if( g_data.display.transition_target_ms == 0 ) {
             pos = ( g_data.display.duration_edited_timepoint_ms != 0 ) ? _cycle % 2 : 0;
         }
         p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
@@ -168,14 +178,8 @@ char * fsq_print_overlay__edit_play_content( const size_t _cycle )
             : g_data.display.duration_s;
         // we're in a transition, display decreasing duration:
         if( g_data.display.transition_target_ms != 0 ) {
-            const int current_clock_ms = get_ms_clock();
-            if( current_clock_ms > g_data.display.transition_target_ms ) {
-                g_data.display.transition_target_ms = 0;
-            }
-            else {
-                duration_s = ( ( double ) ( g_data.display.transition_target_ms - current_clock_ms ) )
-                    / ( double ) 1000;
-            }
+            duration_s = ( ( double ) ( g_data.display.transition_target_ms - current_clock_ms ) )
+                / ( double ) 1000;
         }            
         static char duration_buffer[ FSQ_CONTENT_LENGTH + 1 ];
         snprintf( duration, FSQ_CONTENT_LENGTH, "%s%ss%s", p_edit_left,
@@ -769,15 +773,15 @@ void fsq_go_to_asap()
     const unsigned current_focus_position = fsq_normalized_focus_position();
 
     // read focus point data:
-    const struct fsq_focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
-
-    // transition:
-    g_data.display.transition_target_ms = get_ms_clock() + ( p_focus_point->distribution.duration_s * 1000 );
+    const struct fsq_focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
     
     // compute asap distribution:
     int range = 0;
     const struct fsq_distribution_t distribution = fsq_compute_distribution_between( current_focus_position,
-        p_focus_point->normalized_position, 0, &range );
+        p_focus_point->normalized_position, 0, &range );    
+
+    // transition:
+    g_data.display.transition_target_ms = get_ms_clock() + ( distribution.duration_s * 1000 );
 
     // setup displays:
     g_data.display.sequence_index = g_data.index + 1;
@@ -973,23 +977,13 @@ void fsq_action__edit__remove_focus_point()
         g_data.index--;
     }
 
-    // get current focus point for potential subsequent distribution recomputation:
-    struct fsq_focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
-
     // we're not on the first point, we need to recompute the distribution:
     if( g_data.index != 0 ) {
+        struct fsq_focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
         struct fsq_focus_point_t * const p_previous_focus_point =
             vector_get( &g_data.store.focus_points, g_data.index - 1 );
         p_focus_point->distribution = fsq_compute_distribution_between( p_previous_focus_point->normalized_position,
             p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
-    }
-
-    // if needed, we have to recompute the related distribution of the point after the one just removed:
-    if( g_data.index < g_data.store.focus_points.count - 1 ) {
-        struct fsq_focus_point_t * const p_next_focus_point =
-            vector_get( &g_data.store.focus_points, g_data.index + 1 );
-        p_next_focus_point->distribution = fsq_compute_distribution_between( p_focus_point->normalized_position,
-            p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
     }
     
     // save focus points:

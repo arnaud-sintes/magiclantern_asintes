@@ -120,11 +120,11 @@ void fsq_log( const char * const _fmt, ... );
 
 
 // display buffer max content length:
-#define FSQ_CONTENT_LENGTH 31
+#define FSQ_CONTENT_LENGTH 42
 
 
 // maximum overlay line length:
-// "[----] [99] /99 | [9999cm] | [9.999s]"
+// "[----] [99] /99 | [99.999m] | [9.999s]"
 #define FSQ_OVERLAY_MAX_LINE_LENGTH 38
 
 // print a fixed sized bitmap with text data on LV screen:
@@ -139,7 +139,7 @@ void fsq_print_bmp( const char * const _fmt, ... );
 
 // overlay positions in LV screen:
 #define FSQ_OVERLAY_POSITION_X 0 // sticked to left
-#define FSQ_OVERLAY_POSITION_Y 40 // 40px offset from LV screen top
+#define FSQ_OVERLAY_POSITION_Y 38 // offset from LV screen top
 
 // compute the specific edit/play "content" part, to be displayed in overlays:
 char * fsq_print_overlay__edit_play_content( const size_t _cycle );
