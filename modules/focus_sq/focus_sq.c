@@ -14,7 +14,7 @@
 
 
 // default data structure values:
-static struct data_t g_data = {
+static struct fsq_data_t g_data = {
     .task_running = false,
     .screen_on = true,
     .index = 0,
@@ -25,8 +25,8 @@ static struct data_t g_data = {
     .display = {
         .delimiters = { { " ", ">", "{", "(", "[" }, { " ", "<", "}", ")", "]" } },
         .state_edited_timepoint_ms = 0,
-        .state = STATE__INACTIVE,
-        .transition_in_progress = false,
+        .state = fsq_inactive,
+        .transition_target_ms = 0,
         .sequence_edited_timepoint_ms = 0,
         .sequence_index = 0,
         .sequence_length = 0,
@@ -40,7 +40,7 @@ static struct data_t g_data = {
 };
 
 
-void Log( const char * _fmt, ... )
+void fsq_log( const char * const _fmt, ... )
 {
     va_list args;
     static char data[ 256 ];
@@ -51,11 +51,11 @@ void Log( const char * _fmt, ... )
 }
 
 
-void Print_bmp( const char * _fmt, ... )
+void fsq_print_bmp( const char * const _fmt, ... )
 {
     // unfold arguments regarding format:
     va_list args;
-    static char data[ OVERLAY_MAX_LINE_LENGTH + 1 ];
+    static char data[ FSQ_OVERLAY_MAX_LINE_LENGTH + 1 ];
     va_start( args, _fmt );
     const int dataLen = sizeof( data );
     const int written = vsnprintf( data, dataLen - 1, _fmt, args );
@@ -67,105 +67,143 @@ void Print_bmp( const char * _fmt, ... )
     
     // draw label with data, white font over black background:
     static uint32_t fontspec = FONT( FONT_MONO_20, COLOR_WHITE, COLOR_BLACK );
-    int x = OVERLAY_POSITION_X;
-    int y = OVERLAY_POSITION_Y;
+    int x = FSQ_OVERLAY_POSITION_X;
+    int y = FSQ_OVERLAY_POSITION_Y;
     bmp_puts( fontspec, &x, &y, data );
 }
 
 
-char * Print_overlay__edit_play_content( const size_t _cycle )
+char * fsq_print_overlay__edit_play_content( const size_t _cycle )
 {
     // set up text content:
-    static char content[ CONTENT_LENGTH + 1 ];
+    static char content[ FSQ_CONTENT_LENGTH + 1 ];
     const char * p_edit_left = 0;
     const char * p_edit_right = 0;
 
     // sequence part:
-    static char step[ CONTENT_LENGTH + 1 ];
-    if( g_data.display.transition_in_progress ) {
+    static char step[ FSQ_CONTENT_LENGTH + 1 ];
+    if( g_data.display.transition_target_ms != 0 ) {
         static const char * const p_transition[ 6 ] = { "==>", " ==", "  =", "   ", ">  ", "=> " };
-        snprintf( step, CONTENT_LENGTH, "%s (% 2d)", p_transition[ _cycle % 6 ], g_data.display.sequence_index );
+        snprintf( step, FSQ_CONTENT_LENGTH, "%s (% 2d)", p_transition[ _cycle % 6 ], g_data.display.sequence_index );
     }
     else {
-        const size_t pos = g_data.display.sequence_edited_timepoint_ms != 0 ? _cycle % 2 : 0;
+        const size_t pos = ( g_data.display.sequence_edited_timepoint_ms != 0 ) ? _cycle % 2 : 0;
         p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
         p_edit_right = g_data.display.delimiters[ 1 ][ pos ];
-        snprintf( step, CONTENT_LENGTH, "%s% 2d%s /% 2d", p_edit_left, g_data.display.sequence_index, p_edit_right, g_data.display.sequence_length );
+        snprintf( step, FSQ_CONTENT_LENGTH, "%s% 2d%s /% 2d", p_edit_left, g_data.display.sequence_index,
+            p_edit_right, g_data.display.sequence_length );
     }
 
     // focus part:
-    static char focus[ CONTENT_LENGTH + 1 ];
-    const bool position_is_different = g_data.display.state == STATE__EDIT && g_data.display.focus_distance_cm != lens_info.focus_dist;
-    const size_t pos = g_data.display.transition_in_progress ? 3 : ( position_is_different ? ( _cycle % 2 ) << 1 : ( g_data.display.focus_edited_timepoint_ms != 0 ? _cycle % 2 : 0 ) );
+    static char focus[ FSQ_CONTENT_LENGTH + 1 ];
+    const bool position_is_different = ( g_data.display.state == fsq_edit )
+        && ( g_data.display.focus_distance_cm != lens_info.focus_dist );
+    size_t pos = 3;
+    if( g_data.display.transition_target_ms == 0 ) {
+        if( position_is_different ) {
+            pos = ( _cycle % 2 ) << 1;
+        }
+        else {
+            pos = ( g_data.display.focus_edited_timepoint_ms != 0 ) ? _cycle % 2 : 0;
+        }
+    }
     p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
     p_edit_right = g_data.display.delimiters[ 1 ][ pos ];
-    const unsigned focus_distance_cm = g_data.display.transition_in_progress || position_is_different ? lens_info.focus_dist : g_data.display.focus_distance_cm;
-    static char focus_distance_buffer[ CONTENT_LENGTH + 1 ];
-    if( focus_distance_cm == INFINITE_FOCUS_DISTANCE_TRIGGER ) {
-        snprintf( focus_distance_buffer, CONTENT_LENGTH, " inf. " );
+    const unsigned focus_distance_cm = ( ( g_data.display.transition_target_ms != 0 ) || position_is_different )
+        ? lens_info.focus_dist
+        : g_data.display.focus_distance_cm;
+    static char focus_distance_buffer[ FSQ_CONTENT_LENGTH + 1 ];
+    if( focus_distance_cm == FSQ_INFINITE_FOCUS_DISTANCE_TRIGGER ) {
+        snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, " inf. " );
     }
     else {
         // centimeter display:
         if( focus_distance_cm < 100 ) {
-            snprintf( focus_distance_buffer, CONTENT_LENGTH, "% 4dcm", focus_distance_cm );
+            snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, "% 4dcm", focus_distance_cm );
         }
         // or meter display:
         else {
-            static char distance_buffer[ CONTENT_LENGTH + 1 ];
-            snprintf( focus_distance_buffer, CONTENT_LENGTH, "%sm", format_float_ex( ( double ) focus_distance_cm / ( double ) 100, 3, distance_buffer, CONTENT_LENGTH ) );
+            static char distance_buffer[ FSQ_CONTENT_LENGTH + 1 ];
+            const double focus_distance_m = ( double ) focus_distance_cm / ( double ) 100;
+            snprintf( focus_distance_buffer, FSQ_CONTENT_LENGTH, "%sm",
+                format_float_ex( focus_distance_m, 3, distance_buffer, FSQ_CONTENT_LENGTH ) );
         }
     }
-    snprintf( focus, CONTENT_LENGTH, "%s%s%s", p_edit_left, focus_distance_buffer, p_edit_right );
+    snprintf( focus, FSQ_CONTENT_LENGTH, "%s%s%s", p_edit_left, focus_distance_buffer, p_edit_right );
 
     // duration part:
-    static char duration[ CONTENT_LENGTH + 1 ];
-    if( !g_data.display.transition_in_progress && ( g_data.display.state == STATE__PLAY || ( g_data.display.state == STATE__EDIT && g_data.display.sequence_index == 1 ) ) ) {
-        snprintf( duration, CONTENT_LENGTH, "" );
+    static char duration[ FSQ_CONTENT_LENGTH + 1 ];
+     if( ( g_data.display.transition_target_ms == 0 ) &&
+        ( g_data.display.state == fsq_play ||
+            ( g_data.display.state == fsq_edit && g_data.display.sequence_index == 1 ) ) ) {
+        snprintf( duration, FSQ_CONTENT_LENGTH, "" );
     }
     else {
-        const size_t pos = g_data.display.transition_in_progress ? 3 : ( g_data.display.duration_edited_timepoint_ms != 0 ? _cycle % 2 : 0 );
+        size_t pos = 3;
+        if( ( g_data.display.transition_target_ms == 0 ) ) {
+            pos = ( g_data.display.duration_edited_timepoint_ms != 0 ) ? _cycle % 2 : 0;
+        }
         p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
         p_edit_right = g_data.display.delimiters[ 1 ][ pos ];
-        const double duration_s = g_data.display.duration_edited_timepoint_ms != 0 ? g_data.display.target_duration_s : g_data.display.duration_s;
-        static char duration_buffer[ CONTENT_LENGTH + 1 ];
-        snprintf( duration, CONTENT_LENGTH, "%s%ss%s", p_edit_left, format_float_ex( duration_s, 3, duration_buffer, CONTENT_LENGTH ), p_edit_right );
+        double duration_s = ( g_data.display.duration_edited_timepoint_ms != 0 )
+            ? g_data.display.target_duration_s
+            : g_data.display.duration_s;
+        // we're in a transition, display decreasing duration:
+        if( g_data.display.transition_target_ms != 0 ) {
+            const int current_clock_ms = get_ms_clock();
+            if( current_clock_ms > g_data.display.transition_target_ms ) {
+                g_data.display.transition_target_ms = 0;
+            }
+            else {
+                duration_s = ( ( double ) ( g_data.display.transition_target_ms - current_clock_ms ) )
+                    / ( double ) 1000;
+            }
+        }            
+        static char duration_buffer[ FSQ_CONTENT_LENGTH + 1 ];
+        snprintf( duration, FSQ_CONTENT_LENGTH, "%s%ss%s", p_edit_left,
+            format_float_ex( duration_s, 3, duration_buffer, FSQ_CONTENT_LENGTH ), p_edit_right );
     }
 
     // content:
-    snprintf( content, CONTENT_LENGTH, "%s | %s | %s", step, focus, duration );
+    snprintf( content, FSQ_CONTENT_LENGTH, "%s | %s | %s", step, focus, duration );
     return content;
 }
 
 
-char * Print_overlay__content( const size_t _cycle )
+char * fsq_print_overlay__content( const size_t _cycle )
 {
     // edit or play:
-    if( g_data.display.state == STATE__EDIT || g_data.display.state == STATE__PLAY ) {
-        return Print_overlay__edit_play_content( _cycle );
+    if( g_data.display.state == fsq_edit || g_data.display.state == fsq_play ) {
+        return fsq_print_overlay__edit_play_content( _cycle );
     }
 
     // inactive state:
-    static char content[ CONTENT_LENGTH + 1 ];
-    if( g_data.display.state == STATE__INACTIVE ) {
-        snprintf( content, CONTENT_LENGTH, "" );
+    static char content[ FSQ_CONTENT_LENGTH + 1 ];
+    if( g_data.display.state == fsq_inactive ) {
+        snprintf( content, FSQ_CONTENT_LENGTH, "" );
         return content;
     }
 
     // deal with messages:
     static const char * const p_messages[ 2 ] = { "checking lens limits", "calibrating lens" };
-    snprintf( content, CONTENT_LENGTH, "%s...", p_messages[ g_data.display.state - STATE__CHECKING_LENS_LIMITS ] );
+    snprintf( content, FSQ_CONTENT_LENGTH, "%s...", p_messages[ g_data.display.state - fsq_checking_lens_limits ] );
     return content;
 }
 
 
-void Print_overlay( const size_t _cycle )
+void fsq_print_overlay( const size_t _cycle )
 {
     // reset edit highlight timepoints, if needed:
-    int * const p_edit_timepoints[ 4 ] = { &g_data.display.state_edited_timepoint_ms, &g_data.display.sequence_edited_timepoint_ms, &g_data.display.focus_edited_timepoint_ms, &g_data.display.duration_edited_timepoint_ms };
+    int * const p_edit_timepoints[ 4 ] = {
+        &g_data.display.state_edited_timepoint_ms,
+        &g_data.display.sequence_edited_timepoint_ms,
+        &g_data.display.focus_edited_timepoint_ms,
+        &g_data.display.duration_edited_timepoint_ms
+    };
     const int current_clock_ms = get_ms_clock();
     for( int i = 0; i < 4; i ++ ) {
         int * const p_edit_timepoint = p_edit_timepoints[ i ];
-        if( *p_edit_timepoint != 0 && ( current_clock_ms - *p_edit_timepoint ) > HIGHLIGTH_DURATION_MS ) {
+        if( *p_edit_timepoint != 0 && ( current_clock_ms - *p_edit_timepoint ) > FSQ_HIGHLIGTH_DURATION_MS ) {
             *p_edit_timepoint = 0;
         }
     }
@@ -174,17 +212,18 @@ void Print_overlay( const size_t _cycle )
     static const char * p_headers[ 4 ] = { "    ", "edit", "play", "----" };
     static const char * const p_header_progress[ 6 ] = { " .oO", ".oOo", "oOo.", "Oo. ", "o. .", ". .o" };
     p_headers[ 3 ] = p_header_progress[ _cycle % 6 ];
-    const size_t header_index = g_data.display.state < 3 ? g_data.display.state : 3;
+    const size_t header_index = ( g_data.display.state < 3 ) ? g_data.display.state : 3;
 
     // print:
-    const size_t pos = g_data.display.state_edited_timepoint_ms != 0 ? ( _cycle % 2 ) * 4 : 4;
+    const size_t pos = ( g_data.display.state_edited_timepoint_ms != 0 ) ? ( _cycle % 2 ) << 2 : 4;
     const char * const p_edit_left = g_data.display.delimiters[ 0 ][ pos ];
     const char * const p_edit_right = g_data.display.delimiters[ 1 ][ pos ];
-    Print_bmp( "%s%s%s %s", p_edit_left, p_headers[ header_index ], p_edit_right, Print_overlay__content( _cycle ) );
+    fsq_print_bmp( "%s%s%s %s", p_edit_left, p_headers[ header_index ], p_edit_right,
+        fsq_print_overlay__content( _cycle ) );
 }
 
 
-void Overlay_task()
+void fsq_overlay_task()
 {
     // (de)activate task:
     g_data.task_running = !g_data.task_running;
@@ -195,7 +234,7 @@ void Overlay_task()
         
         // print overlay (only if not in menus):
         if( !gui_menu_shown() ) {
-            Print_overlay( cycle++ );
+            fsq_print_overlay( cycle++ );
         }
         
         // breathe a little to let other tasks do their job properly:
@@ -204,77 +243,84 @@ void Overlay_task()
 }
 
 
-void Save_data_store()
+void fsq_save_data_store()
 {
-    FIO_RemoveFile( FOCUS_SQ_SETTINGS_FILE );
-    FILE * p_file = FIO_CreateFile( FOCUS_SQ_SETTINGS_FILE );
-    FIO_WriteFile( p_file, g_data.store.lens_name, sizeof( char ) * LENS_NAME_MAX_LENGTH );
+    FIO_RemoveFile( FSQ_FOCUS_SQ_SETTINGS_FILE );
+    FILE * p_file = FIO_CreateFile( FSQ_FOCUS_SQ_SETTINGS_FILE );
+    FIO_WriteFile( p_file, g_data.store.lens_name, sizeof( char ) * FSQ_LENS_NAME_MAX_LENGTH );
     FIO_WriteFile( p_file, &g_data.store.focus_positions.count, sizeof( size_t ) );
-    FIO_WriteFile( p_file, g_data.store.focus_positions.p_data, sizeof( unsigned ) * g_data.store.focus_positions.count );
-    FIO_WriteFile( p_file, g_data.store.modes, sizeof( struct step_mode_t ) * 3 );
+    FIO_WriteFile( p_file, g_data.store.focus_positions.p_data,
+        sizeof( unsigned ) * g_data.store.focus_positions.count );
+    FIO_WriteFile( p_file, g_data.store.modes, sizeof( struct fsq_step_mode_t ) * 3 );
     FIO_WriteFile( p_file, &g_data.store.focus_points.count, sizeof( size_t ) );
-    FIO_WriteFile( p_file, g_data.store.focus_points.p_data, sizeof( struct focus_point_t ) * g_data.store.focus_points.count );
+    FIO_WriteFile( p_file, g_data.store.focus_points.p_data,
+        sizeof( struct fsq_focus_point_t ) * g_data.store.focus_points.count );
     FIO_CloseFile( p_file );
 }
 
 
-void Load_data_store()
+void fsq_load_data_store()
 {
-    FILE * p_file = FIO_OpenFile( FOCUS_SQ_SETTINGS_FILE, O_RDONLY );
+    FILE * p_file = FIO_OpenFile( FSQ_FOCUS_SQ_SETTINGS_FILE, O_RDONLY );
     if( p_file == 0 ) {
         return;
     }
-    FIO_ReadFile( p_file, g_data.store.lens_name, sizeof( char ) * LENS_NAME_MAX_LENGTH );
+    FIO_ReadFile( p_file, g_data.store.lens_name, sizeof( char ) * FSQ_LENS_NAME_MAX_LENGTH );
     FIO_ReadFile( p_file, &g_data.store.focus_positions.count, sizeof( size_t ) );
     vector_reserve( &g_data.store.focus_positions, g_data.store.focus_positions.count );
-    FIO_ReadFile( p_file, g_data.store.focus_positions.p_data, sizeof( unsigned ) * g_data.store.focus_positions.count );
-    FIO_ReadFile( p_file, g_data.store.modes, sizeof( struct step_mode_t ) * 3 );
+    FIO_ReadFile( p_file, g_data.store.focus_positions.p_data,
+        sizeof( unsigned ) * g_data.store.focus_positions.count );
+    FIO_ReadFile( p_file, g_data.store.modes, sizeof( struct fsq_step_mode_t ) * 3 );
     FIO_ReadFile( p_file, &g_data.store.focus_points.count, sizeof( size_t ) );
     vector_reserve( &g_data.store.focus_points, g_data.store.focus_points.count );
-    FIO_ReadFile( p_file, g_data.store.focus_points.p_data, sizeof( struct focus_point_t ) * g_data.store.focus_points.count );
+    FIO_ReadFile( p_file, g_data.store.focus_points.p_data,
+        sizeof( struct fsq_focus_point_t ) * g_data.store.focus_points.count );
     FIO_CloseFile( p_file );
 }
 
 
-void Set_focus_position_normalizer()
+void fsq_set_focus_position_normalizer()
 {
     // normalization in progress...
-    g_data.display.state = STATE__CHECKING_LENS_LIMITS;
+    g_data.display.state = fsq_checking_lens_limits;
     
     // go to the very last position asap:
-    while( lens_focus_ex( ASAP_STEP_NUMBER, 3, true, true, 0 ) ) {}
+    while( lens_focus_ex( FSQ_ASAP_STEP_NUMBER, 3, true, true, 0 ) ) {}
             
     // store last focus position:
     const int last_focus_position = lens_info.focus_pos;
     
     // go to the very first position asap:
-    while( lens_focus_ex( ASAP_STEP_NUMBER, 3, false, true, 0 ) ) {}
+    while( lens_focus_ex( FSQ_ASAP_STEP_NUMBER, 3, false, true, 0 ) ) {}
     
     // set first focus position:
     g_data.lens_limits.first_focus_position = lens_info.focus_pos;
     
     // dump first & last focus positions:
-    Log( "{f} first focus pos.: %d\n", g_data.lens_limits.first_focus_position );
-    Log( "{f} last  focus pos.: %d\n", last_focus_position );
+    fsq_log( "{f} first focus pos.: %d\n", g_data.lens_limits.first_focus_position );
+    fsq_log( "{f} last  focus pos.: %d\n", last_focus_position );
     
     // compute position normalizer regarding distance sign:
     const int focus_position_distance = last_focus_position - g_data.lens_limits.first_focus_position;
-    g_data.lens_limits.focus_position_normalizer = focus_position_distance < 0 ? -1 : 1;
-    Log( "{f} normalizer sign : %s\n", g_data.lens_limits.focus_position_normalizer > 0 ? "positive" : "negative" );
+    g_data.lens_limits.focus_position_normalizer = ( focus_position_distance < 0 ) ? -1 : 1;
+    fsq_log( "{f} normalizer sign : %s\n", ( g_data.lens_limits.focus_position_normalizer > 0 )
+        ? "positive"
+        : "negative" );
     
     // normalization finished.
-    g_data.display.state = STATE__EDIT;
+    g_data.display.state = fsq_edit;
 }
 
 
-unsigned Normalized_focus_position()
+unsigned fsq_normalized_focus_position()
 {
     // keep only positive values starting at zero:
-    return ( lens_info.focus_pos - g_data.lens_limits.first_focus_position ) * g_data.lens_limits.focus_position_normalizer;
+    return ( lens_info.focus_pos - g_data.lens_limits.first_focus_position )
+        * g_data.lens_limits.focus_position_normalizer;
 }
 
 
-size_t Closest_step_from_position( const unsigned _focus_position )
+size_t fsq_closest_step_from_position( const unsigned _focus_position )
 {
     // search for an exact or greater match:
     for( size_t step = 0; step < g_data.store.focus_positions.count; step++ ) {
@@ -299,21 +345,21 @@ size_t Closest_step_from_position( const unsigned _focus_position )
 }
 
 
-void Calibrate_lens()
+void fsq_calibrate_lens()
 {
     // calibration in progress...
-    g_data.display.state = STATE__CALIBRATING_LENS;
+    g_data.display.state = ( size_t ) fsq_calibrate_lens;
 
     // avoid direct usage of the vector here:
-    unsigned * focus_positions = malloc( MAX_FOCUS_POSITIONS * sizeof( unsigned ) );
+    unsigned * focus_positions = malloc( FSQ_MAX_FOCUS_POSITIONS * sizeof( unsigned ) );
     
     // for each atomically reachable lens step:
     size_t step_index = 0;
     do {
         
         // store the normalized focus position and loop to next step:
-        ASSERT( step_index < MAX_FOCUS_POSITIONS );
-        focus_positions[ step_index++ ] = Normalized_focus_position();
+        ASSERT( step_index < FSQ_MAX_FOCUS_POSITIONS );
+        focus_positions[ step_index++ ] = fsq_normalized_focus_position();
     }
     // move forward:
     while( lens_focus_ex( 1, 1, true, true, 0 ) );
@@ -324,48 +370,49 @@ void Calibrate_lens()
     free( focus_positions );
     
     // dump focus position steps:
-    Log( "{f} focus position steps: %d\n", g_data.store.focus_positions.count );
+    fsq_log( "{f} focus position steps: %d\n", g_data.store.focus_positions.count );
     
     // dump information:
-    Dump_focus_positions();
+    fsq_dump_focus_positions();
     
     // remember lens name:
-    memcpy( g_data.store.lens_name, lens_info.name, LENS_NAME_MAX_LENGTH );
+    memcpy( g_data.store.lens_name, lens_info.name, FSQ_LENS_NAME_MAX_LENGTH );
     
     // evaluate how much steps does a step size of 3 and 2 (1 is obsviously 1):
     // note: we're going backward
-    Evaluate_step_size( MODE_3 );
-    Evaluate_step_size( MODE_2 );
-    g_data.store.modes[ MODE_1 ].steps = 1;
+    fsq_evaluate_step_size( fsq_mode_3 );
+    fsq_evaluate_step_size( fsq_mode_2 );
+    g_data.store.modes[ fsq_mode_1 ].steps = 1;
     
     // evaluate step size speeds:
-    // note: we're finishing the backward move at step size 1, then we're moving forward at step size 2, then we're moving backward to home at step size 3
-    Evaluate_step_size_speed( false, MODE_1 );
-    Evaluate_step_size_speed( true,  MODE_2 );
-    Evaluate_step_size_speed( false, MODE_3 );
+    // note: we're finishing the backward move at step size 1, then we're moving forward at step size 2,
+    // then we're moving backward to home at step size 3
+    fsq_evaluate_step_size_speed( false, fsq_mode_1 );
+    fsq_evaluate_step_size_speed( true, fsq_mode_2 );
+    fsq_evaluate_step_size_speed( false, fsq_mode_3 );
     
     // save calibration result in data store:
-    Save_data_store();
+    fsq_save_data_store();
     
     // calibrated.
-    g_data.display.state = STATE__EDIT;
+    g_data.display.state = fsq_edit;
 }
 
 
-void Dump_focus_position_range( const size_t _step_0, const size_t _step_1 )
+void fsq_dump_focus_position_range( const size_t _step_0, const size_t _step_1 )
 {
-    Log( "{f} focus positions [%d,%d]: ", _step_0, _step_1 );
+    fsq_log( "{f} focus positions [%d,%d]: ", _step_0, _step_1 );
     for( size_t step = _step_0; step <= _step_1; step++ ) {
-        Log( "%d", *( ( unsigned * ) vector_get( &g_data.store.focus_positions, step ) ) );
+        fsq_log( "%d", *( ( unsigned * ) vector_get( &g_data.store.focus_positions, step ) ) );
         if( step != _step_1 ) {
-            Log( "," );
+            fsq_log( "," );
         }
     }
-    Log( "\n" );
+    fsq_log( "\n" );
 }
 
 
-void Dump_focus_positions()
+void fsq_dump_focus_positions()
 {    
     // dump positions range:
     const size_t step_range = 3;
@@ -373,43 +420,45 @@ void Dump_focus_positions()
     // dump first focus positions:
     const size_t step_0 = 0;
     const size_t step_1 = step_range - 1;
-    Dump_focus_position_range( step_0, step_1 );
+    fsq_dump_focus_position_range( step_0, step_1 );
     
     // dump last focus positions:
     const size_t step_3 = g_data.store.focus_positions.count - 1;
     const size_t step_2 = g_data.store.focus_positions.count - step_range;
-    Dump_focus_position_range( step_2, step_3 );
+    fsq_dump_focus_position_range( step_2, step_3 );
 }
 
 
-void Evaluate_step_size( const size_t _mode )
+void fsq_evaluate_step_size( const size_t _mode )
 {
     // get current focus position & compute closest step:
-    const size_t step_0 = Closest_step_from_position( Normalized_focus_position() );
+    const size_t step_0 = fsq_closest_step_from_position( fsq_normalized_focus_position() );
     
     // move lens, 8 iterations to average the output values:
     const size_t loop = 8;
-    const unsigned step_size = ( _mode == MODE_3 ) ? 3 : 2;
+    const unsigned step_size = ( _mode == fsq_mode_3 ) ? 3 : 2;
     ASSERT( lens_focus_ex( ( unsigned ) loop, step_size, false, true, 0 ) );
     
     // get new focus position & compute closest step:
-    const size_t step_1 = Closest_step_from_position( Normalized_focus_position() );
+    const size_t step_1 = fsq_closest_step_from_position( fsq_normalized_focus_position() );
     
     // compute corresponding step movement:
     const size_t step_size_steps = ( step_0 - step_1 ) / loop;
-    Log( "{f} steps for step size of %d: %d\n", step_size, step_size_steps );
+    fsq_log( "{f} steps for step size of %d: %d\n", step_size, step_size_steps );
     g_data.store.modes[ _mode ].steps = step_size_steps;
 }
 
 
-void Evaluate_step_size_speed( const bool _forward, const size_t _mode )
+void fsq_evaluate_step_size_speed( const bool _forward, const size_t _mode )
 {
     // get the current focus lens step from position:
-    const size_t current_step = Closest_step_from_position( Normalized_focus_position() );
+    const size_t current_step = fsq_closest_step_from_position( fsq_normalized_focus_position() );
     
     // we want to cover the whole remaining steps to reach begin or end, depending if moving forward or backward:
-    // (note: because the current step is the closest approximation, we need to take 1 step of margin when going forward)
-    const size_t step_count = _forward ? ( g_data.store.focus_positions.count - current_step - 1 - 1 ) : current_step;
+    // note: because the current step is the closest approximation, we need to take 1 step of margin when going forward
+    const size_t step_count = _forward
+        ? ( g_data.store.focus_positions.count - current_step - 1 - 1 )
+        : current_step;
     
     // evaluate the number of loop we can do depending of the current step size steps:
     const size_t step_size_steps = g_data.store.modes[ _mode ].steps;
@@ -422,7 +471,10 @@ void Evaluate_step_size_speed( const bool _forward, const size_t _mode )
     const int t_before_ms = get_ms_clock();
     
     // do the move, without waiting for feedback:
-    const unsigned step_size = ( _mode == MODE_3 ) ? 3 : ( _mode == MODE_2 ) ? 2 : 1;
+    unsigned step_size = 3;
+    if( _mode != fsq_mode_3 ) {
+        step_size = ( _mode == fsq_mode_2 ) ? 2 : 1;
+    }
     lens_focus_ex( ( unsigned ) loop_count, ( unsigned ) step_size, _forward, false, 0 );
     
     // evaluate the current step size speed (in steps per second):
@@ -432,8 +484,9 @@ void Evaluate_step_size_speed( const bool _forward, const size_t _mode )
     wait_for_stabilized_focus_position();
     
     // dump step size speed:
-    static char speed_buffer[ CONTENT_LENGTH + 1 ];
-    Log( "{f} step size %d: %s steps per second\n", step_size, format_float_ex( step_size_speed, 3, speed_buffer, CONTENT_LENGTH ) );
+    static char speed_buffer[ FSQ_CONTENT_LENGTH + 1 ];
+    fsq_log( "{f} step size %d: %s steps per second\n", step_size, format_float_ex( step_size_speed, 3, speed_buffer,
+        FSQ_CONTENT_LENGTH ) );
     g_data.store.modes[ _mode ].speed = step_size_speed;
     
     // how many steps are remaining to reach the initial destination?
@@ -446,33 +499,35 @@ void Evaluate_step_size_speed( const bool _forward, const size_t _mode )
 }
 
 
-struct distribution_t Compute_distribution_between( const unsigned _focus_position_1, const unsigned _focus_position_2, const double _duration_s, int * _p_range )
+struct fsq_distribution_t fsq_compute_distribution_between( const unsigned _focus_position_1,
+    const unsigned _focus_position_2, const double _duration_s, int * _p_range )
 {
-    const int step_1 = ( int ) Closest_step_from_position( _focus_position_1 );
-    const int step_2 = ( int ) Closest_step_from_position( _focus_position_2 );
+    const int step_1 = ( int ) fsq_closest_step_from_position( _focus_position_1 );
+    const int step_2 = ( int ) fsq_closest_step_from_position( _focus_position_2 );
     const int range = step_2 - step_1;
     if( _p_range != NULL ) {
         *_p_range = range;
     }
-    return Distribute_modes( ABS( range ), _duration_s );
+    return fsq_distribute_modes( ABS( range ), _duration_s );
 }
 
 
-double Distribution_duration( const struct distribution_t * const  _p_distribution )
+double fsq_distribution_duration( const struct fsq_distribution_t * const  _p_distribution )
 {
     double duration_s = 0;
     for( int i = 0; i < 3; i++ ) {
         if( _p_distribution->mode_call_counts[ i ] != 0 ) {
-            duration_s += ( _p_distribution->mode_call_counts[ i ] * g_data.store.modes[ i ].steps ) / g_data.store.modes[ i ].speed;
+            duration_s += ( _p_distribution->mode_call_counts[ i ] * g_data.store.modes[ i ].steps )
+                / g_data.store.modes[ i ].speed;
         }
     }
     return duration_s;
 }
 
 
-struct distribution_t Distribute_modes( const size_t _step_range, const double _target_duration_s )
+struct fsq_distribution_t fsq_distribute_modes( const size_t _step_range, const double _target_duration_s )
 {
-    struct distribution_t distribution = { { 0, 0, 0 }, .wait = 0 };
+    struct fsq_distribution_t distribution = { { 0, 0, 0 }, .wait = 0 };
 
     // compute possible durations depending of modes:
     double durations[ 3 ];
@@ -506,8 +561,9 @@ struct distribution_t Distribute_modes( const size_t _step_range, const double _
         const double ratio = 1 - ( ( _target_duration_s - durations[ offset ] ) / durations[ offset + 1 ] );
 
         // dichotomic best distribution search:
+        // (perform 80 loops between +/-20% of the initial ratio)
         double best_distribution_duration = 100000;
-        for( double delta = -0.2; delta < ( double ) 0.2; delta += ( double ) 0.005 ) { // 80 loops between +/-20% of the initial ratio
+        for( double delta = -0.2; delta < ( double ) 0.2; delta += ( double ) 0.005 ) {
 
             // compute distribution with current ratio and delta:
             size_t count = ( size_t )( ( ratio + delta ) * _step_range ) / g_data.store.modes[ offset ].steps;
@@ -515,7 +571,7 @@ struct distribution_t Distribute_modes( const size_t _step_range, const double _
             // the first speed is the reference:
             size_t range = _step_range;
             int _offset = offset;
-            struct distribution_t current_distribution = { { 0, 0, 0 }, .wait = 0 };
+            struct fsq_distribution_t current_distribution = { { 0, 0, 0 }, .wait = 0 };
             int mode_call_counts_index = offset;
             current_distribution.mode_call_counts[ mode_call_counts_index++ ] = count;
 
@@ -530,7 +586,8 @@ struct distribution_t Distribute_modes( const size_t _step_range, const double _
             }
 
             // is it the best match regarding the duration? (the smallest the closest to the target)
-            const double current_distribution_duration = ABS( _target_duration_s - Distribution_duration( &current_distribution ) );
+            const double current_distribution_duration = ABS( _target_duration_s -
+                fsq_distribution_duration( &current_distribution ) );
             if( current_distribution_duration < best_distribution_duration ) {
                 best_distribution_duration = current_distribution_duration;
                 distribution = current_distribution;
@@ -539,7 +596,7 @@ struct distribution_t Distribute_modes( const size_t _step_range, const double _
     }
     
     // wait time:
-    distribution.duration_s = Distribution_duration( &distribution );
+    distribution.duration_s = fsq_distribution_duration( &distribution );
     distribution.wait = _target_duration_s - distribution.duration_s;
     if( distribution.wait > 0 ) {
         distribution.duration_s += distribution.wait;
@@ -550,7 +607,7 @@ struct distribution_t Distribute_modes( const size_t _step_range, const double _
 }
 
 
-void Play_distribution( const struct distribution_t * const _p_distribution, const bool _forward )
+void fsq_play_distribution( const struct fsq_distribution_t * const _p_distribution, const bool _forward )
 {
     // what's the greatest count value in the distribution?
     size_t max_count = 0;
@@ -563,7 +620,7 @@ void Play_distribution( const struct distribution_t * const _p_distribution, con
     // prepare jobs:
     // NOTE: 1-3 jobs are for lens_focus_ex calls with step_size 1, 2, 3
     // 4th job is for msleep( sleep_duration_ms ) calls
-    struct job_t jobs[ 4 ] = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } };
+    struct fsq_job_t jobs[ 4 ] = { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } };
     for( int i = 0; i < 3; i++ ) {
         if( _p_distribution->mode_call_counts[ i ] != 0 ) {
             jobs[ i ].remaining_call_counts = _p_distribution->mode_call_counts[ i ];
@@ -622,13 +679,13 @@ void Play_distribution( const struct distribution_t * const _p_distribution, con
 }
 
 
-void Go_to()
+void fsq_go_to()
 {
-    // transition:
-    g_data.display.transition_in_progress = true;
-
     // read focus point data:
-    const struct focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
+    const struct fsq_focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
+
+    // transition:
+    g_data.display.transition_target_ms = get_ms_clock() + ( p_focus_point->distribution.duration_s * 1000 );
 
     // setup displays:
     g_data.display.sequence_index = g_data.index + 1;
@@ -641,7 +698,8 @@ void Go_to()
     const int t_before_ms = get_ms_clock();
 
     // play distribution:
-    Play_distribution( &p_focus_point->distribution, p_focus_point->normalized_position > Normalized_focus_position() );
+    fsq_play_distribution( &p_focus_point->distribution,
+        p_focus_point->normalized_position > fsq_normalized_focus_position() );
 
     // real duration of the distribution:
     const double real_duration_s = ( double ) ( get_ms_clock() - t_before_ms ) / ( double ) 1000.0;
@@ -650,9 +708,9 @@ void Go_to()
     wait_for_stabilized_focus_position();
 
     // get target and real focus step values:
-    const int target_step = ( int ) Closest_step_from_position( p_focus_point->normalized_position );
-    const unsigned real_focus_position = Normalized_focus_position();
-    const int real_step = ( int ) Closest_step_from_position( real_focus_position );
+    const int target_step = ( int ) fsq_closest_step_from_position( p_focus_point->normalized_position );
+    const unsigned real_focus_position = fsq_normalized_focus_position();
+    const int real_step = ( int ) fsq_closest_step_from_position( real_focus_position );
     unsigned corrected_real_focus_position = real_focus_position;
 
     // correct position only if needed:
@@ -666,43 +724,42 @@ void Go_to()
         wait_for_stabilized_focus_position();
 
         // get corrected real focus position:
-        corrected_real_focus_position = Normalized_focus_position();
+        corrected_real_focus_position = fsq_normalized_focus_position();
     }
 
     // final position deviation:
     const int deviation_after = ( int ) p_focus_point->normalized_position - ( int ) corrected_real_focus_position;
 
     // dump deviation without correction:
-    static char deviation_buffer[ CONTENT_LENGTH + 1 ];
-    const char * const p_duration_deviation = format_float_ex( real_duration_s - p_focus_point->distribution.duration_s, 3, deviation_buffer, CONTENT_LENGTH );
+    static char deviation_buffer[ FSQ_CONTENT_LENGTH + 1 ];
+    const char * const p_duration_deviation = format_float_ex( real_duration_s - p_focus_point->distribution.duration_s,
+        3, deviation_buffer, FSQ_CONTENT_LENGTH );
     if( real_step == target_step ) {
-        Log( "{f} deviations: %d, %ss\n", deviation_after, p_duration_deviation );
+        fsq_log( "{f} deviations: %d, %ss\n", deviation_after, p_duration_deviation );
     }
     // dump corrected deviation:
     else {
         const int deviation_before = ( int ) p_focus_point->normalized_position - ( int ) real_focus_position;
-        Log( "{f} deviations: (%d) %d corrected, %ss\n", deviation_before, deviation_after, p_duration_deviation );
+        fsq_log( "{f} deviations: (%d) %d corrected, %ss\n", deviation_before, deviation_after, p_duration_deviation );
     }
-    
-    // transition finished:
-    g_data.display.transition_in_progress = false;
 }
 
 
-void Go_to_asap()
+void fsq_go_to_asap()
 {
-    // transition:
-    g_data.display.transition_in_progress = true;
-
     // read current focus position:
-    const unsigned current_focus_position = Normalized_focus_position();
+    const unsigned current_focus_position = fsq_normalized_focus_position();
 
     // read focus point data:
-    const struct focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
+    const struct fsq_focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );    
+
+    // transition:
+    g_data.display.transition_target_ms = get_ms_clock() + ( p_focus_point->distribution.duration_s * 1000 );
     
     // compute asap distribution:
     int range = 0;
-    const struct distribution_t distribution = Compute_distribution_between( current_focus_position, p_focus_point->normalized_position, 0, &range );
+    const struct fsq_distribution_t distribution = fsq_compute_distribution_between( current_focus_position,
+        p_focus_point->normalized_position, 0, &range );
 
     // setup displays:
     g_data.display.sequence_index = g_data.index + 1;
@@ -713,14 +770,14 @@ void Go_to_asap()
     g_data.display.duration_s = distribution.duration_s;
 
     // play distribution:
-    Play_distribution( &distribution, range > 0 );
+    fsq_play_distribution( &distribution, range > 0 );
 
     // wait for current stabilized focus position:
     wait_for_stabilized_focus_position();
 
     // get real focus step values:
-    const int target_step = ( int ) Closest_step_from_position( p_focus_point->normalized_position );
-    const int real_step = ( int ) Closest_step_from_position( Normalized_focus_position() );
+    const int target_step = ( int ) fsq_closest_step_from_position( p_focus_point->normalized_position );
+    const int real_step = ( int ) fsq_closest_step_from_position( fsq_normalized_focus_position() );
 
     // correct position only if needed:
     if( real_step != target_step ) {
@@ -734,51 +791,50 @@ void Go_to_asap()
     }
     
     // transition finished:
-    g_data.display.transition_in_progress = false;
     g_data.display.target_duration_s = p_focus_point->duration_s;
     g_data.display.duration_s = p_focus_point->distribution.duration_s;
 }
 
 
-void Action__toggle_mode()
+void fsq_action__toggle_mode()
 {
     // cycle between inactive, edit & play:
     g_data.display.state_edited_timepoint_ms = get_ms_clock();
     g_data.display.state++;
-    if( g_data.display.state > STATE__PLAY ) {
-        g_data.display.state = STATE__INACTIVE;
+    if( g_data.display.state > fsq_play ) {
+        g_data.display.state = fsq_inactive;
     }
 
     // there's only something to do when switching to edit:
-    if( g_data.display.state != STATE__EDIT ) {
+    if( g_data.display.state != fsq_edit ) {
         return;
     }
     
     // perform focus position normalization if needed:
     if( g_data.lens_limits.focus_position_normalizer == 0 ) {
-        Set_focus_position_normalizer();
+        fsq_set_focus_position_normalizer();
     }
     
     // perform lens calibration if needed:
-    if( memcmp( g_data.store.lens_name, lens_info.name, LENS_NAME_MAX_LENGTH ) != 0 ) {
-        Calibrate_lens();
+    if( memcmp( g_data.store.lens_name, lens_info.name, FSQ_LENS_NAME_MAX_LENGTH ) != 0 ) {
+        fsq_calibrate_lens();
     }
     else {
-        Log( "{f} lens was already calibrated.\n" );
+        fsq_log( "{f} lens was already calibrated.\n" );
     }
 
     // focus point list is not empty, go to first/last known position asap:
     if( g_data.store.focus_points.count != 0 ) {
-        Go_to_asap();
+        fsq_go_to_asap();
         return;
     }
 
     // empty list, add a first focus point:
-    Action__edit__add_focus_point();
+    fsq_action__edit__add_focus_point();
 }
 
 
-void Action__toggle_camera_display()
+void fsq_action__toggle_camera_display()
 {
     // toggle screen:
     g_data.screen_on = !g_data.screen_on;
@@ -793,25 +849,29 @@ void Action__toggle_camera_display()
 }
 
 
-void Action__edit__add_focus_point()
+void fsq_action__edit__add_focus_point()
 {        
     // new focus point information:
-    struct focus_point_t focus_point = {
-        .normalized_position = Normalized_focus_position(),
+    struct fsq_focus_point_t focus_point = {
+        .normalized_position = fsq_normalized_focus_position(),
         .distance_cm = lens_info.focus_dist,
         .duration_s = 0
     };
 
     // compute new distribution if needed:
     if( g_data.store.focus_points.count > 0 ) {
-        const struct focus_point_t * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
-        focus_point.distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, focus_point.normalized_position, focus_point.duration_s, NULL );
+        const struct fsq_focus_point_t * const p_previous_focus_point =
+            vector_get( &g_data.store.focus_points, g_data.index );
+        focus_point.distribution = fsq_compute_distribution_between( p_previous_focus_point->normalized_position,
+            focus_point.normalized_position, focus_point.duration_s, NULL );
 
         // set the default target duration as close as possible as the best possible effort, using 100ms approximation:
-        focus_point.duration_s = ( double ) ( ( int ) ( ( focus_point.distribution.duration_s + ( double ) FOCUS_POINT_INCREMENT_S ) * 10 ) ) / 10;
+        focus_point.duration_s = ( double ) ( ( int ) ( ( focus_point.distribution.duration_s +
+            ( double ) FSQ_FOCUS_POINT_INCREMENT_S ) * 10 ) ) / 10;
 
         // compute closest distribution with new target value:
-        focus_point.distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, focus_point.normalized_position, focus_point.duration_s, NULL );
+        focus_point.distribution = fsq_compute_distribution_between( p_previous_focus_point->normalized_position,
+            focus_point.normalized_position, focus_point.duration_s, NULL );
 
         // increment index:
         g_data.index++;
@@ -822,12 +882,13 @@ void Action__edit__add_focus_point()
 
     // if needed, we have to recompute the related distribution of the point after the one being added:
     if( g_data.index < g_data.store.focus_points.count - 1 ) {
-        struct focus_point_t * p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
-        p_next_focus_point->distribution = Compute_distribution_between( focus_point.normalized_position, p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
+        struct fsq_focus_point_t * p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
+        p_next_focus_point->distribution = fsq_compute_distribution_between( focus_point.normalized_position,
+            p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
     }
         
     // save focus points:
-    Save_data_store();
+    fsq_save_data_store();
 
     // setup displays:
     g_data.display.sequence_edited_timepoint_ms = get_ms_clock();
@@ -842,29 +903,33 @@ void Action__edit__add_focus_point()
 }
 
 
-void Action__edit__set_current_lens_information()
+void fsq_action__edit__set_current_lens_information()
 {
     // get current focus point information:
-    struct focus_point_t * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
+    struct fsq_focus_point_t * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
 
     // update lens information:
-    p_focus_point->normalized_position = Normalized_focus_position();
+    p_focus_point->normalized_position = fsq_normalized_focus_position();
     p_focus_point->distance_cm = lens_info.focus_dist;
 
     // re-compute distribution if needed:
     if( g_data.index > 0 ) {
-        const struct focus_point_t * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
-        p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
+        const struct fsq_focus_point_t * const p_previous_focus_point =
+            vector_get( &g_data.store.focus_points,g_data.index - 1 );
+        p_focus_point->distribution = fsq_compute_distribution_between( p_previous_focus_point->normalized_position,
+            p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
     }
 
     // if needed, we have to recompute the related distribution of the point after the one being updated:
     if( g_data.index < g_data.store.focus_points.count - 1 ) {
-        struct focus_point_t * const p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
-        p_next_focus_point->distribution = Compute_distribution_between( p_focus_point->normalized_position, p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
+        struct fsq_focus_point_t * const p_next_focus_point =
+            vector_get( &g_data.store.focus_points, g_data.index + 1 );
+        p_next_focus_point->distribution = fsq_compute_distribution_between( p_focus_point->normalized_position,
+            p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
     }
     
     // save focus points:
-    Save_data_store();
+    fsq_save_data_store();
 
     // setup displays:
     g_data.display.focus_edited_timepoint_ms = get_ms_clock();
@@ -875,7 +940,7 @@ void Action__edit__set_current_lens_information()
 }
 
 
-void Action__edit__remove_focus_point()
+void fsq_action__edit__remove_focus_point()
 {
     // nothing to do if only one point remains:
     if( g_data.store.focus_points.count == 1 ) {
@@ -891,29 +956,33 @@ void Action__edit__remove_focus_point()
     }
 
     // get current focus point for potential subsequent distribution recomputation:
-    struct focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
+    struct fsq_focus_point_t * const p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
 
     // we're not on the first point, we need to recompute the distribution:
     if( g_data.index != 0 ) {
-        struct focus_point_t * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
-        p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
+        struct fsq_focus_point_t * const p_previous_focus_point =
+            vector_get( &g_data.store.focus_points, g_data.index - 1 );
+        p_focus_point->distribution = fsq_compute_distribution_between( p_previous_focus_point->normalized_position,
+            p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
     }
 
     // if needed, we have to recompute the related distribution of the point after the one just removed:
     if( g_data.index < g_data.store.focus_points.count - 1 ) {
-        struct focus_point_t * const p_next_focus_point = vector_get( &g_data.store.focus_points, g_data.index + 1 );
-        p_next_focus_point->distribution = Compute_distribution_between( p_focus_point->normalized_position, p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
+        struct fsq_focus_point_t * const p_next_focus_point =
+            vector_get( &g_data.store.focus_points, g_data.index + 1 );
+        p_next_focus_point->distribution = fsq_compute_distribution_between( p_focus_point->normalized_position,
+            p_next_focus_point->normalized_position, p_next_focus_point->duration_s, NULL );
     }
     
     // save focus points:
-    Save_data_store();
+    fsq_save_data_store();
 
     // go to new position asap:
-    Go_to_asap();
+    fsq_go_to_asap();
 }
 
 
-void Action__edit__go_to_next_focus_point()
+void fsq_action__edit__go_to_next_focus_point()
 {
     // increase index (or loop to beginning):
     if( g_data.index++ == g_data.store.focus_points.count - 1 ) {
@@ -921,11 +990,11 @@ void Action__edit__go_to_next_focus_point()
     }
 
     // go to new position asap:
-    Go_to_asap();
+    fsq_go_to_asap();
 }
 
 
-void Action__edit__go_to_previous_focus_point()
+void fsq_action__edit__go_to_previous_focus_point()
 {
     // decrease index (or loop to end):
     if( g_data.index-- == 0 ) {
@@ -933,11 +1002,11 @@ void Action__edit__go_to_previous_focus_point()
     }
 
     // go to new position asap:
-    Go_to_asap();
+    fsq_go_to_asap();
 }
 
 
-void Action__edit__update_transition_speed( const bool _increase )
+void fsq_action__edit__update_transition_speed( const bool _increase )
 {
     // nothing to do if we're on the first point:
     if( g_data.index == 0 ) {
@@ -945,22 +1014,25 @@ void Action__edit__update_transition_speed( const bool _increase )
     }
 
     // get current focus point information:
-    struct focus_point_t * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
+    struct fsq_focus_point_t * p_focus_point = vector_get( &g_data.store.focus_points, g_data.index );
 
     // check for limits:
-    if( ( _increase && p_focus_point->duration_s > ( double ) 9.8 ) || ( !_increase && p_focus_point->duration_s < ( double ) 0.1 ) ) {
+    if( ( _increase && p_focus_point->duration_s > ( double ) 9.8 ) ||
+        ( !_increase && p_focus_point->duration_s < ( double ) 0.1 ) ) {
         return;
     }
 
     // update transition duration:
-    p_focus_point->duration_s += ( double ) FOCUS_POINT_INCREMENT_S * ( _increase ? 1 : -1 );
+    p_focus_point->duration_s += ( double ) FSQ_FOCUS_POINT_INCREMENT_S * ( _increase ? 1 : -1 );
 
     // recompute distribution:
-    const struct focus_point_t * const p_previous_focus_point = vector_get( &g_data.store.focus_points, g_data.index - 1 );
-    p_focus_point->distribution = Compute_distribution_between( p_previous_focus_point->normalized_position, p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
+    const struct fsq_focus_point_t * const p_previous_focus_point =
+        vector_get( &g_data.store.focus_points, g_data.index - 1 );
+    p_focus_point->distribution = fsq_compute_distribution_between( p_previous_focus_point->normalized_position,
+        p_focus_point->normalized_position, p_focus_point->duration_s, NULL );
     
     // save focus points:
-    Save_data_store();
+    fsq_save_data_store();
 
     // setup displays:
     g_data.display.duration_edited_timepoint_ms = get_ms_clock();
@@ -969,19 +1041,19 @@ void Action__edit__update_transition_speed( const bool _increase )
 }
 
 
-void Action__edit__increase_transition_speed()
+void fsq_action__edit__increase_transition_speed()
 {
-    Action__edit__update_transition_speed( true );
+    fsq_action__edit__update_transition_speed( true );
 }
 
 
-void Action__edit__decrease_transition_speed()
+void fsq_action__edit__decrease_transition_speed()
 {
-    Action__edit__update_transition_speed( false );
+    fsq_action__edit__update_transition_speed( false );
 }
 
 
-void Action__play__go_to_next_focus_point()
+void fsq_action__play__go_to_next_focus_point()
 {
     // increase index (or loop):
     if( g_data.index == g_data.store.focus_points.count - 1 ) {
@@ -992,21 +1064,21 @@ void Action__play__go_to_next_focus_point()
     g_data.index++;
 
     // go to position:
-    Go_to();
+    fsq_go_to();
 }
 
 
-void Action__play__go_fast_to_first_focus_point()
+void fsq_action__play__go_fast_to_first_focus_point()
 {
     // first focus point:
     g_data.index = 0;
 
     // go to new position asap:
-    Go_to_asap();
+    fsq_go_to_asap();
 }
 
 
-unsigned int Key_handler( const unsigned int _key )
+unsigned int fsq_key_handler( const unsigned int _key )
 {
     // we're in the ML menus, bypass:
     if( gui_menu_shown() ) {
@@ -1020,38 +1092,38 @@ unsigned int Key_handler( const unsigned int _key )
     
     // [INFO] button toggle between modes:
     if( _key == MODULE_KEY_INFO ) {
-        Action__toggle_mode();
+        fsq_action__toggle_mode();
         return 0;
     }
     
     // no need to track keys when idle:
-    if( g_data.display.state == STATE__INACTIVE ) {
+    if( g_data.display.state == fsq_inactive ) {
         return 1;
     }
 
     // (de)activate the camera display (screen saver):
     if( _key == MODULE_KEY_RATE ) {
-        Action__toggle_camera_display();
+        fsq_action__toggle_camera_display();
         return 0;
     }
 
     // edit & play keyboard mapping initialization:
-    static void * functions[ 2 ][ MAX_KEY_MAP + 1 ] = { { ( void * ) -1 } };
+    static void * functions[ 2 ][ FSQ_MAX_KEY_MAP + 1 ] = { { ( void * ) -1 } };
     if( functions[ 0 ][ 0 ] == ( void * ) -1 ) {
-        memset( functions, 0, 2 * MAX_KEY_MAP );
+        memset( functions, 0, 2 * FSQ_MAX_KEY_MAP );
 
         // edit mode key mapping:
-        functions[ STATE__EDIT - 1 ][ MODULE_KEY_Q ] = &Action__edit__add_focus_point;
-        functions[ STATE__EDIT - 1 ][ MODULE_KEY_PRESS_SET ] = &Action__edit__set_current_lens_information;
-        functions[ STATE__EDIT - 1 ][ MODULE_KEY_TRASH ] = &Action__edit__remove_focus_point;
-        functions[ STATE__EDIT - 1 ][ MODULE_KEY_PRESS_RIGHT ] = &Action__edit__go_to_next_focus_point;
-        functions[ STATE__EDIT - 1 ][ MODULE_KEY_PRESS_LEFT ] = &Action__edit__go_to_previous_focus_point;
-        functions[ STATE__EDIT - 1 ][ MODULE_KEY_PRESS_UP ] = &Action__edit__increase_transition_speed;
-        functions[ STATE__EDIT - 1 ][ MODULE_KEY_PRESS_DOWN ] = &Action__edit__decrease_transition_speed;
+        functions[ fsq_edit - 1 ][ MODULE_KEY_Q ] = &fsq_action__edit__add_focus_point;
+        functions[ fsq_edit - 1 ][ MODULE_KEY_PRESS_SET ] = &fsq_action__edit__set_current_lens_information;
+        functions[ fsq_edit - 1 ][ MODULE_KEY_TRASH ] = &fsq_action__edit__remove_focus_point;
+        functions[ fsq_edit - 1 ][ MODULE_KEY_PRESS_RIGHT ] = &fsq_action__edit__go_to_next_focus_point;
+        functions[ fsq_edit - 1 ][ MODULE_KEY_PRESS_LEFT ] = &fsq_action__edit__go_to_previous_focus_point;
+        functions[ fsq_edit - 1 ][ MODULE_KEY_PRESS_UP ] = &fsq_action__edit__increase_transition_speed;
+        functions[ fsq_edit - 1 ][ MODULE_KEY_PRESS_DOWN ] = &fsq_action__edit__decrease_transition_speed;
         
         // play mode key mapping:
-        functions[ STATE__PLAY - 1 ][ MODULE_KEY_PRESS_SET ] = &Action__play__go_to_next_focus_point;
-        functions[ STATE__PLAY - 1 ][ MODULE_KEY_Q ] = &Action__play__go_fast_to_first_focus_point;
+        functions[ fsq_play - 1 ][ MODULE_KEY_PRESS_SET ] = &fsq_action__play__go_to_next_focus_point;
+        functions[ fsq_play - 1 ][ MODULE_KEY_Q ] = &fsq_action__play__go_fast_to_first_focus_point;
     }
 
     // get the function associated to the key:
@@ -1070,22 +1142,22 @@ unsigned int Key_handler( const unsigned int _key )
 struct menu_entry g_menu[] = { {
     .name    = "Sequence",
     .select  = run_in_separate_task, // DryOS task, running in parallel
-    .priv    = Overlay_task,
+    .priv    = fsq_overlay_task,
     .help    = "Start focus sequencing",
 } };
 
 
-unsigned int Init()
+unsigned int fsq_init()
 {
     // init lens name:
-    memset( g_data.store.lens_name, 0, LENS_NAME_MAX_LENGTH );
+    memset( g_data.store.lens_name, 0, FSQ_LENS_NAME_MAX_LENGTH );
 
     // init vectors:
     g_data.store.focus_positions = vector_create( sizeof( unsigned ) );
-    g_data.store.focus_points = vector_create( sizeof( struct focus_point_t ) );
+    g_data.store.focus_points = vector_create( sizeof( struct fsq_focus_point_t ) );
 
     // load data:
-    Load_data_store();
+    fsq_load_data_store();
     
     // add focus sequencing mode to Focus menu:
     menu_add( "Focus", g_menu, COUNT( g_menu ) );
@@ -1093,7 +1165,7 @@ unsigned int Init()
 }
 
 
-unsigned int Deinit()
+unsigned int fsq_deinit()
 {
     // stop task:
     g_data.task_running = false;
@@ -1103,10 +1175,10 @@ unsigned int Deinit()
 
 
 MODULE_INFO_START()
-    MODULE_INIT( Init )
-    MODULE_DEINIT( Deinit )
+    MODULE_INIT( fsq_init )
+    MODULE_DEINIT( fsq_deinit )
 MODULE_INFO_END()
 
 MODULE_CBRS_START()
-    MODULE_CBR( CBR_KEYPRESS, Key_handler, 0 )
+    MODULE_CBR( CBR_KEYPRESS, fsq_key_handler, 0 )
 MODULE_CBRS_END()
