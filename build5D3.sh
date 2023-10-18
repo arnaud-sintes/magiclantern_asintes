@@ -1,5 +1,5 @@
 platform=platform/5D3.
-name=crop_rec_4k_mlv_snd_isogain_1x3_presets_ultrafast_focussq
+name=crop_rec_4k_mlv_snd_isogain_1x3_presets_ultrafast_fsq_
 
 
 # building 5D3 code with zip

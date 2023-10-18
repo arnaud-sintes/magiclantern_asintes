@@ -10,7 +10,25 @@
 #include "focus_sq.h"
 
 
-// TODO user documentation
+// TODO user documentation / video demonstration:
+// - focus sequence activation via ML menu
+// - switch from "inactive" to "edit" mode (INFO)
+// - calibration process the first time
+// - reloading calibration / checking limit
+// - auto-focus / setting focus distance value (SET)
+// - auto-focus, display difference / adding a point next-to (Q)
+// - navigating between focus point (LEFT/RIGHT)
+// - removing a point (TRASH)
+// - adding multiple points (auto-focus/SET/Q)
+// - changing the transition duration value (UP/DOWN)
+// - explanation about the target vs expected duration, speed distributions
+// - switch to play mode (INFO)
+// - go to 1st point (Q)
+// - play sequence to next point on time (SET)
+// - explanation about smooth distribution
+// - demonstration while recording
+// - screen saver (RATE)
+// - summary of camera buttons in inactive/edit/play modes
 
 
 // default data structure values:
@@ -297,13 +315,13 @@ void fsq_set_focus_position_normalizer()
     g_data.lens_limits.first_focus_position = lens_info.focus_pos;
     
     // dump first & last focus positions:
-    fsq_log( "{f} first focus pos.: %d\n", g_data.lens_limits.first_focus_position );
-    fsq_log( "{f} last  focus pos.: %d\n", last_focus_position );
+    fsq_log( "{fsq} first focus pos.: %d\n", g_data.lens_limits.first_focus_position );
+    fsq_log( "{fsq} last  focus pos.: %d\n", last_focus_position );
     
     // compute position normalizer regarding distance sign:
     const int focus_position_distance = last_focus_position - g_data.lens_limits.first_focus_position;
     g_data.lens_limits.focus_position_normalizer = ( focus_position_distance < 0 ) ? -1 : 1;
-    fsq_log( "{f} normalizer sign : %s\n", ( g_data.lens_limits.focus_position_normalizer > 0 )
+    fsq_log( "{fsq} normalizer sign : %s\n", ( g_data.lens_limits.focus_position_normalizer > 0 )
         ? "positive"
         : "negative" );
     
@@ -370,7 +388,7 @@ void fsq_calibrate_lens()
     free( focus_positions );
     
     // dump focus position steps:
-    fsq_log( "{f} focus position steps: %d\n", g_data.store.focus_positions.count );
+    fsq_log( "{fsq} focus position steps: %d\n", g_data.store.focus_positions.count );
     
     // dump information:
     fsq_dump_focus_positions();
@@ -401,7 +419,7 @@ void fsq_calibrate_lens()
 
 void fsq_dump_focus_position_range( const size_t _step_0, const size_t _step_1 )
 {
-    fsq_log( "{f} focus positions [%d,%d]: ", _step_0, _step_1 );
+    fsq_log( "{fsq} focus positions [%d,%d]: ", _step_0, _step_1 );
     for( size_t step = _step_0; step <= _step_1; step++ ) {
         fsq_log( "%d", *( ( unsigned * ) vector_get( &g_data.store.focus_positions, step ) ) );
         if( step != _step_1 ) {
@@ -444,7 +462,7 @@ void fsq_evaluate_step_size( const size_t _mode )
     
     // compute corresponding step movement:
     const size_t step_size_steps = ( step_0 - step_1 ) / loop;
-    fsq_log( "{f} steps for step size of %d: %d\n", step_size, step_size_steps );
+    fsq_log( "{fsq} steps for step size of %d: %d\n", step_size, step_size_steps );
     g_data.store.modes[ _mode ].steps = step_size_steps;
 }
 
@@ -485,7 +503,7 @@ void fsq_evaluate_step_size_speed( const bool _forward, const size_t _mode )
     
     // dump step size speed:
     static char speed_buffer[ FSQ_CONTENT_LENGTH + 1 ];
-    fsq_log( "{f} step size %d: %s steps per second\n", step_size, format_float_ex( step_size_speed, 3, speed_buffer,
+    fsq_log( "{fsq} step size %d: %s steps per second\n", step_size, format_float_ex( step_size_speed, 3, speed_buffer,
         FSQ_CONTENT_LENGTH ) );
     g_data.store.modes[ _mode ].speed = step_size_speed;
     
@@ -735,12 +753,12 @@ void fsq_go_to()
     const char * const p_duration_deviation = format_float_ex( real_duration_s - p_focus_point->distribution.duration_s,
         3, deviation_buffer, FSQ_CONTENT_LENGTH );
     if( real_step == target_step ) {
-        fsq_log( "{f} deviations: %d, %ss\n", deviation_after, p_duration_deviation );
+        fsq_log( "{fsq} deviations: %d, %ss\n", deviation_after, p_duration_deviation );
     }
     // dump corrected deviation:
     else {
         const int deviation_before = ( int ) p_focus_point->normalized_position - ( int ) real_focus_position;
-        fsq_log( "{f} deviations: (%d) %d corrected, %ss\n", deviation_before, deviation_after, p_duration_deviation );
+        fsq_log( "{fsq} deviations: (%d) %d corrected, %ss\n", deviation_before, deviation_after, p_duration_deviation );
     }
 }
 
@@ -820,7 +838,7 @@ void fsq_action__toggle_mode()
         fsq_calibrate_lens();
     }
     else {
-        fsq_log( "{f} lens was already calibrated.\n" );
+        fsq_log( "{fsq} lens was already calibrated.\n" );
     }
 
     // focus point list is not empty, go to first/last known position asap:

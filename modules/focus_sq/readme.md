@@ -7,7 +7,7 @@
 - We cannot use an external *focus puller monitor* because we're recording videos using **crop modes**, which are currently incompatible with the camera *HDMI output*
 - We're recording videos as a **single camera operator** without the assistance of a *focus puller* and the sequence is too complex to deal with *manual focusing*
 
-👉 *Cinematographer mode* provides then a way to easily **record multiple lens focus points**, so we can prepare a sequence including camera or target movements and subsequently **replay** them as we're recording videos, using a simple push button to switch to a point to the next one in the sequence.
+👉 *focus sequencing* provides then a way to easily **record multiple lens focus points**, so we can prepare a sequence including camera or target movements and subsequently **replay** them as we're recording videos, using a simple push button to switch to a point to the next one in the sequence.
 
 > **Typical use case**: I'm a *single camera operator* recording a video using *crop modes* and my sequence is a combination of a *dolly-in* movement (with a speed ramp) and a horizontal camera rotation used to keep an object at the center of the composition.
 >
@@ -108,9 +108,9 @@ When doing a *lens focus transition* operation using a target duration, we can n
 
 ## How to install
 
-Because we rely over a specific *lens_focus* function, there's currently no way to use this module outside specific builds that will include this function.
+Because we rely over a specific *lens_focus* function, there's currently no way to use this module outside specific builds that are including this function.
 
-Our best shot is then to use one specific ***crop_rec_4k_mlv_snd_isogain_1x3_presets_ultrafast_focussq*** *Magic Lantern* build [available in my personal repository](https://github.com/arnaud-sintes/magiclantern_asintes/releases), which is basically an up-to-date fork of Danne's one (with also the *[ultrafast framed preview](https://www.magiclantern.fm/forum/index.php?topic=26998)* feature).
+Our best shot is then to use one specific ***crop_rec_4k_mlv_snd_isogain_1x3_presets_ultrafast_fsq*** *Magic Lantern* build [available in my personal repository](https://github.com/arnaud-sintes/magiclantern_asintes/releases), which is basically an up-to-date fork of Danne's one (with also the *[ultrafast framed preview](https://www.magiclantern.fm/forum/index.php?topic=26998)* feature).
 
 Using this build, the ***focus_sq*** module is simply **embedded and activated by default**.
 
