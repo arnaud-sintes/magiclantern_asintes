@@ -43,7 +43,6 @@
 #include "focus.h"
 #include "lvinfo.h"
 #include "powersave.h"
-#include "util.h"
 
 // for movie logging
 static char* mvr_logfile_buffer = 0;
@@ -2931,14 +2930,14 @@ static LVINFO_UPDATE_FUNC(fps_update)
 
 struct card_t
 {
-    char * type;
-    double free_space_gb;
+    struct card_info * p_card_info;
+    int free_space_gb;
 };
 
 static LVINFO_UPDATE_FUNC(free_space_update)
 {
-    LVINFO_BUFFER(11);
-    // "XX:999.1GB"
+    LVINFO_BUFFER(16);
+    // "SD:999|CF:999GB"
     
     if (RECORDING)
     {
@@ -2946,24 +2945,37 @@ static LVINFO_UPDATE_FUNC(free_space_update)
         return;
     }
 
-    // feed CF & SD cards info:
-    struct card_t cards[ 2 ];
-    int card_count = 0;
-    for( int i = 0; i < 2; i++ ) {
-        struct card_info * p_card_info = get_card( i );
-        if( p_card_info->cluster_size == 0 ) {
-            continue;
+    // the first time, we need to identify what card is available or not:
+    static struct card_t cards[ 2 ];
+    static int card_count = 0;
+    if( card_count == 0 ) {
+        for( int i = 0; i < 2; i++ ) {
+            if( is_dir( i == 0 ? "A:/" : "B:/" ) ) {
+                cards[ card_count++ ].p_card_info = get_card( i );
+            }
         }
-        cards[ card_count ].type = p_card_info->type;
-        cards[ card_count ].free_space_gb = ( double ) get_free_space_32k( p_card_info ) *
-            32000 / ( double ) ( 1024 * 1024 * 1024 );
-        card_count++;
     }
 
-    // alternate display between cards every two seconds max.:
-    struct card_t p_card = cards[ ( get_seconds_clock() >> 1 ) % card_count ];
-    char space_buffer[ 16 ];
-    snprintf( buffer, sizeof( buffer ), "%s:%sGB", p_card.type, format_float_ex( p_card.free_space_gb, 1, space_buffer, 15 ) );
+    // every time, we need to update free space for all available cards:
+    for( int i = 0; i < card_count; i++ ) {
+        struct card_t * p_card = &cards[ i ];
+        int free_space_gb = ( get_free_space_32k( p_card->p_card_info ) << 5 ) >> 20;
+        if( free_space_gb > 999 ) {
+            free_space_gb = 999;
+        }
+        p_card->free_space_gb = free_space_gb;
+    }
+
+    // setup display for 1 slot:
+    struct card_t card_1 = cards[ 0 ];
+    if( card_count == 1 ) {
+        snprintf( buffer, sizeof( buffer ), "%s:%dGB", card_1.p_card_info->type, card_1.free_space_gb );
+    }
+    // setup display for 2 slots:
+    else {
+        struct card_t card_2 = cards[ 1 ];
+        snprintf( buffer, sizeof( buffer ), "%s:%d|%s:%dGB", card_1.p_card_info->type, card_1.free_space_gb, card_2.p_card_info->type, card_2.free_space_gb );
+    }
 }
 
 static LVINFO_UPDATE_FUNC(mode_update)
@@ -3364,7 +3376,7 @@ static struct lvinfo_item info_items[] = {
         .name = "Temperature",
         .which_bar = LV_TOP_BAR_ONLY,
         .update = temp_update,
-        .priority = 1,
+        .priority = -1,
     },
     {
         .name = "MVI number",
