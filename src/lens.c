@@ -43,6 +43,7 @@
 #include "focus.h"
 #include "lvinfo.h"
 #include "powersave.h"
+#include "util.h"
 
 // for movie logging
 static char* mvr_logfile_buffer = 0;
@@ -2928,9 +2929,16 @@ static LVINFO_UPDATE_FUNC(fps_update)
     }
 }
 
+struct card_t
+{
+    char * type;
+    double free_space_gb;
+};
+
 static LVINFO_UPDATE_FUNC(free_space_update)
 {
-    LVINFO_BUFFER(8);
+    LVINFO_BUFFER(11);
+    // "XX:999.1GB"
     
     if (RECORDING)
     {
@@ -2938,17 +2946,24 @@ static LVINFO_UPDATE_FUNC(free_space_update)
         return;
     }
 
-    int free_space_32k = get_free_space_32k(get_shooting_card());
+    // feed CF & SD cards info:
+    struct card_t cards[ 2 ];
+    int card_count = 0;
+    for( int i = 0; i < 2; i++ ) {
+        struct card_info * p_card_info = get_card( i );
+        if( p_card_info->cluster_size == 0 ) {
+            continue;
+        }
+        cards[ card_count ].type = p_card_info->type;
+        cards[ card_count ].free_space_gb = ( double ) get_free_space_32k( p_card_info ) *
+            32000 / ( double ) ( 1024 * 1024 * 1024 );
+        card_count++;
+    }
 
-    int fsg = free_space_32k >> 15;
-    int fsgr = free_space_32k - (fsg << 15);
-    int fsgf = (fsgr * 10) >> 15;
-
-    snprintf(buffer, sizeof(buffer), 
-        "%d.%dGB",
-        fsg,
-        fsgf
-    );
+    // alternate display between cards every two seconds max.:
+    struct card_t p_card = cards[ ( get_seconds_clock() >> 1 ) % card_count ];
+    char space_buffer[ 16 ];
+    snprintf( buffer, sizeof( buffer ), "%s:%sGB", p_card.type, format_float_ex( p_card.free_space_gb, 1, space_buffer, 15 ) );
 }
 
 static LVINFO_UPDATE_FUNC(mode_update)

@@ -21,6 +21,7 @@ static GUARDED_BY(lvinfo_sem)   int layout_dirty = 0;
 
 static GUARDED_BY(lvinfo_sem)   int default_font = FONT_MED_LARGE | FONT_ALIGN_CENTER;   /* used in normal situations */
 static GUARDED_BY(lvinfo_sem)   int small_font = FONT_MED | FONT_ALIGN_CENTER;           /* used if the layout gets really tight */
+static GUARDED_BY(lvinfo_sem)   int fixed_font = FONT_MONO_20 | FONT_ALIGN_CENTER;       /* used for fixed displays */
 
 /* fixme: false thread safety warning
  * when called from INIT_FUNC's, the semaphore may not be initialized yet
@@ -61,6 +62,13 @@ void lvinfo_update_items(struct lvinfo_item * items[], int count, int override_f
         items[i]->hidden = 0;
         
         if (override_font) items[i]->fontspec = override_font;
+
+        // specific case for cards free space to avoid horizontal spacing
+        // flickering due to potential SD/CF report alternance:
+        if( strcmp(items[i]->name, "Free space") == 0 ) {
+            items[i]->fontspec = fixed_font;
+        }
+
         int fnt = items[i]->fontspec;
         items[i]->color_fg = FONT_FG(fnt);
         items[i]->color_bg = FONT_BG(fnt);
@@ -587,9 +595,26 @@ void lvinfo_display(int top, int bottom)
     give_semaphore(lvinfo_sem);
 }
 
+
+void lvinfo_regular_update()
+{
+    // ensures the top bar is refreshed at least every seconds
+    for(;;) {
+        // bypass if menus or recording
+        if( !gui_menu_shown() && !RECORDING ) {
+            BMP_LOCK( if (lv) update_lens_display(1,0); );
+        }
+        msleep(1000);
+    }
+}
+
+
 static void lvinfo_init()
 {
     lvinfo_sem = create_named_semaphore("lvinfo_sem", 1);
+
+    // regular update task:
+    task_create("lvinfo_regular_update", 0x18, 0x1000, lvinfo_regular_update, 0 );
 }
 
 INIT_FUNC("lvinfo", lvinfo_init);

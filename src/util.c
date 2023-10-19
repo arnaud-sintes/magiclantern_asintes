@@ -34,7 +34,7 @@ int bin_search(int lo, int hi, CritFunc crit)
 
 char * format_float_ex( const double _value, const int _digits, char * _buffer, const size_t _buffer_len )
 {
-    ASSERT( _digits > 1 && _digits < 9 );
+    ASSERT( _digits > 0 && _digits < 9 );
     static const unsigned factors[ 8 ] = { 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000 };
     static const char * const signs[ 2 ] = { "", "-" };
     const unsigned factor = factors[ _digits - 1 ];
