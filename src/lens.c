@@ -2936,8 +2936,8 @@ struct card_t
 
 static LVINFO_UPDATE_FUNC(free_space_update)
 {
-    LVINFO_BUFFER(16);
-    // "SD:999|CF:999GB"
+    LVINFO_BUFFER(14);
+    // "SD:999 CF:999"
     
     if (RECORDING)
     {
@@ -2969,12 +2969,12 @@ static LVINFO_UPDATE_FUNC(free_space_update)
     // setup display for 1 slot:
     struct card_t card_1 = cards[ 0 ];
     if( card_count == 1 ) {
-        snprintf( buffer, sizeof( buffer ), "%s:%dGB", card_1.p_card_info->type, card_1.free_space_gb );
+        snprintf( buffer, sizeof( buffer ), "%s:%d", card_1.p_card_info->type, card_1.free_space_gb );
     }
     // setup display for 2 slots:
     else {
         struct card_t card_2 = cards[ 1 ];
-        snprintf( buffer, sizeof( buffer ), "%s:%d|%s:%dGB", card_1.p_card_info->type, card_1.free_space_gb, card_2.p_card_info->type, card_2.free_space_gb );
+        snprintf( buffer, sizeof( buffer ), "%s:%d %s:%d", card_1.p_card_info->type, card_1.free_space_gb, card_2.p_card_info->type, card_2.free_space_gb );
     }
 }
 
