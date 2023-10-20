@@ -2930,14 +2930,17 @@ static LVINFO_UPDATE_FUNC(fps_update)
 
 struct card_t
 {
+    char * drive;
     struct card_info * p_card_info;
     int free_space_gb;
 };
 
+// TODO try FIO-operations like move/delete to check if counter change
+
 static LVINFO_UPDATE_FUNC(free_space_update)
 {
     LVINFO_BUFFER(14);
-    // "SD:999 CF:999"
+    // worst case "SD:999 CF:999"
     
     if (RECORDING)
     {
@@ -2946,35 +2949,48 @@ static LVINFO_UPDATE_FUNC(free_space_update)
     }
 
     // the first time, we need to identify what card is available or not:
-    static struct card_t cards[ 2 ];
+    static struct card_t cards[ 2 ] = {
+        { "A:/", NULL, 0 },
+        { "B:/", NULL, 0 },
+    };
+    static struct card_t * available_cards[ 2 ] = { NULL, NULL };
     static int card_count = 0;
     if( card_count == 0 ) {
         for( int i = 0; i < 2; i++ ) {
-            if( is_dir( i == 0 ? "A:/" : "B:/" ) ) {
-                cards[ card_count++ ].p_card_info = get_card( i );
+            struct card_t * p_card = &cards[ i ];
+            if( !is_dir( p_card->drive ) ) {
+                continue;
             }
+            p_card->p_card_info = get_card( i );
+            available_cards[ card_count++ ] = p_card;
         }
     }
 
     // every time, we need to update free space for all available cards:
+    // TODO temp output
+    printf( "{fs} " );
     for( int i = 0; i < card_count; i++ ) {
-        struct card_t * p_card = &cards[ i ];
-        int free_space_gb = ( get_free_space_32k( p_card->p_card_info ) << 5 ) >> 20;
+        struct card_t * p_card = available_cards[ i ];
+        printf( "[%d]", asi_callcount ); // must increase
+        int free_space_32k = get_free_space_32k( p_card->p_card_info );
+        printf( "%d,", free_space_32k );
+        int free_space_gb = ( free_space_32k << 5 ) >> 20;
         if( free_space_gb > 999 ) {
             free_space_gb = 999;
         }
         p_card->free_space_gb = free_space_gb;
     }
+    printf( "\n" );
 
     // setup display for 1 slot:
-    struct card_t card_1 = cards[ 0 ];
+    struct card_t * p_card_1 = available_cards[ 0 ];
     if( card_count == 1 ) {
-        snprintf( buffer, sizeof( buffer ), "%s:%d", card_1.p_card_info->type, card_1.free_space_gb );
+        snprintf( buffer, sizeof( buffer ), "%s:%d", p_card_1->p_card_info->type, p_card_1->free_space_gb );
     }
     // setup display for 2 slots:
     else {
-        struct card_t card_2 = cards[ 1 ];
-        snprintf( buffer, sizeof( buffer ), "%s:%d %s:%d", card_1.p_card_info->type, card_1.free_space_gb, card_2.p_card_info->type, card_2.free_space_gb );
+        struct card_t * p_card_2 = available_cards[ 1 ];
+        snprintf( buffer, sizeof( buffer ), "%s:%d %s:%d", p_card_1->p_card_info->type, p_card_1->free_space_gb, p_card_2->p_card_info->type, p_card_2->free_space_gb );
     }
 }
 

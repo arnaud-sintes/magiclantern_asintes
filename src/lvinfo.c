@@ -588,26 +588,9 @@ void lvinfo_display(int top, int bottom)
     give_semaphore(lvinfo_sem);
 }
 
-
-void lvinfo_regular_update()
-{
-    // ensures the top bar is refreshed at least every 2 seconds
-    for(;;) {
-        // bypass if menus or recording
-        if( !gui_menu_shown() && !RECORDING && lv ) {
-            BMP_LOCK( update_lens_display(1,0); );
-        }
-        msleep(2000);
-    }
-}
-
-
 static void lvinfo_init()
 {
     lvinfo_sem = create_named_semaphore("lvinfo_sem", 1);
-
-    // regular update task:
-    task_create("lvinfo_regular_update", 0x18, 0x1000, lvinfo_regular_update, 0 );
 }
 
 INIT_FUNC("lvinfo", lvinfo_init);
