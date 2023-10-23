@@ -152,6 +152,4 @@ my_fprintf(
         ...
 );
 
-extern int asi_callcount;
-
 #endif

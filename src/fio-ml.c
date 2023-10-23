@@ -268,12 +268,8 @@ PROP_HANDLER(PROP_CLUSTER_SIZE_C)
     available_cards[CARD_C].cluster_size = buf[0];
 }
 
-
-int asi_callcount = 0;
-
 PROP_HANDLER(PROP_FREE_SPACE_A)
 {
-    asi_callcount++;
     available_cards[CARD_A].free_space_raw = buf[0];
 }
 
