@@ -1504,16 +1504,16 @@ static void mlv_play_render_task(uint32_t priv)
         {
             break;
         }
-        
-        if(mlv_play_paused && !mlv_play_should_stop() && buffer_paused)
+
+        if (mlv_play_paused && !mlv_play_should_stop() && buffer_paused)
         {
             mlv_play_render_frame(buffer_paused);
-			// keep this sleep only with legacy framed preview engine (seems useless):
-			if( get_framed_preview_param( FRAMED_PREVIEW_PARAM__TIMING ) == FRAMED_PREVIEW_PARAM__TIMING__LEGACY )
-				msleep( 100 );
+            // keep this sleep only with legacy framed preview engine (seems useless):
+            if (get_framed_preview_param(FRAMED_PREVIEW_PARAM__TIMING) == FRAMED_PREVIEW_PARAM__TIMING__LEGACY)
+                msleep(100);
             continue;
         }
-        
+
         /* is there something to render? */
         if(msg_queue_receive(mlv_play_queue_render, &buffer, 50))
         {

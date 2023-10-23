@@ -31,14 +31,12 @@ void util_atomic_inc(uint32_t *value);
 typedef int (*CritFunc)(int);
 int bin_search(int lo, int hi, CritFunc crit);
 
-
 // format a float value as a text (potentially rounded)
 // _value       the float value to convert
 // _precision   the expected number of digits after the decimal point
 // _buffer      the buffer to use to dump the text
 // _buffer_len  the buffer lenght
 // return a string pointer
-char * format_float_ex( const double _value, const int _digits, char * _buffer, const size_t _buffer_len );
-
+char *format_float_ex(double _value, int _digits, char *_buffer, size_t _buffer_len);
 
 #endif

@@ -181,13 +181,13 @@ static CONFIG_INT("raw.preview", preview_mode, 2);
 #define PREVIEW_ML     (preview_mode == 2)
 #define PREVIEW_HACKED (preview_mode == 3)
 
-static CONFIG_INT( "raw.framed-preview-engine", framed_preview_engine, FRAMED_PREVIEW_PARAM__ENGINE__LEGACY );
-static CONFIG_INT( "raw.framed-preview-idle-style", framed_preview_idle_style, FRAMED_PREVIEW_PARAM__STYLE__COLORED );
-static CONFIG_INT( "raw.framed-preview-idle-resolution", framed_preview_idle_resolution, FRAMED_PREVIEW_PARAM__RESOLUTION_HALF );
-static CONFIG_INT( "raw.framed-preview-recording-style", framed_preview_recording_style, FRAMED_PREVIEW_PARAM__STYLE__GRAYSCALED );
-static CONFIG_INT( "raw.framed-preview-recording-resolution", framed_preview_recording_resolution, FRAMED_PREVIEW_PARAM__RESOLUTION_QUARTER );
-static CONFIG_INT( "raw.framed-preview-timing", framed_preview_timing, FRAMED_PREVIEW_PARAM__TIMING__LEGACY );
-static CONFIG_INT( "raw.framed-preview-statistics", framed_preview_statistics, FRAMED_PREVIEW_PARAM__STATISTICS_OFF );
+static CONFIG_INT("raw.framed-preview-engine", framed_preview_engine, FRAMED_PREVIEW_PARAM__ENGINE__LEGACY);
+static CONFIG_INT("raw.framed-preview-idle-style", framed_preview_idle_style, FRAMED_PREVIEW_PARAM__STYLE__COLORED);
+static CONFIG_INT("raw.framed-preview-idle-resolution", framed_preview_idle_resolution, FRAMED_PREVIEW_PARAM__RESOLUTION_HALF);
+static CONFIG_INT("raw.framed-preview-recording-style", framed_preview_recording_style, FRAMED_PREVIEW_PARAM__STYLE__GRAYSCALED);
+static CONFIG_INT("raw.framed-preview-recording-resolution", framed_preview_recording_resolution, FRAMED_PREVIEW_PARAM__RESOLUTION_QUARTER);
+static CONFIG_INT("raw.framed-preview-timing", framed_preview_timing, FRAMED_PREVIEW_PARAM__TIMING__LEGACY);
+static CONFIG_INT("raw.framed-preview-statistics", framed_preview_statistics, FRAMED_PREVIEW_PARAM__STATISTICS_OFF);
 
 static CONFIG_INT("raw.warm.up", warm_up, 0);
 static CONFIG_INT("raw.use.srm.memory", use_srm_memory, 1);
@@ -1315,39 +1315,39 @@ static MENU_UPDATE_FUNC(pre_recording_update)
     }
 }
 
-static MENU_UPDATE_FUNC( framed_preview_engine_update )
+static MENU_UPDATE_FUNC(framed_preview_engine_update)
 {
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__ENGINE, framed_preview_engine );
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__ENGINE, framed_preview_engine);
 }
 
-static MENU_UPDATE_FUNC( framed_preview_idle_style_update )
+static MENU_UPDATE_FUNC(framed_preview_idle_style_update)
 {
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__IDLE_STYLE, framed_preview_idle_style );
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__IDLE_STYLE, framed_preview_idle_style);
 }
 
-static MENU_UPDATE_FUNC( framed_preview_idle_resolution_update )
+static MENU_UPDATE_FUNC(framed_preview_idle_resolution_update)
 {
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__IDLE_RESOLUTION, framed_preview_idle_resolution );
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__IDLE_RESOLUTION, framed_preview_idle_resolution);
 }
 
-static MENU_UPDATE_FUNC( framed_preview_recording_style_update )
+static MENU_UPDATE_FUNC(framed_preview_recording_style_update)
 {
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__RECORDING_STYLE, framed_preview_recording_style );
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__RECORDING_STYLE, framed_preview_recording_style);
 }
 
-static MENU_UPDATE_FUNC( framed_preview_recording_resolution_update )
+static MENU_UPDATE_FUNC(framed_preview_recording_resolution_update)
 {
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__RECORDING_RESOLUTION, framed_preview_recording_resolution );
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__RECORDING_RESOLUTION, framed_preview_recording_resolution);
 }
 
-static MENU_UPDATE_FUNC( framed_preview_timing_update )
+static MENU_UPDATE_FUNC(framed_preview_timing_update)
 {
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__TIMING, framed_preview_timing );
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__TIMING, framed_preview_timing);
 }
 
-static MENU_UPDATE_FUNC( framed_preview_statistics_update )
+static MENU_UPDATE_FUNC(framed_preview_statistics_update)
 {
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__STATISTICS, framed_preview_statistics );
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__STATISTICS, framed_preview_statistics);
 }
 
 static MENU_UPDATE_FUNC(h264_proxy_update)
@@ -4012,310 +4012,264 @@ static MENU_UPDATE_FUNC(raw_playback_update)
 }
 
 static struct menu_entry raw_video_menu[] =
-{
     {
-        .name = "RAW video",
-        .priv = &raw_video_enabled,
-        .max = 1,
-        .update = raw_main_update,
-        .submenu_width = 710,
-        .depends_on = DEP_LIVEVIEW | DEP_MOVIE_MODE,
-        .help = "Record RAW video (MLV format).",
-        .help2 = "Press LiveView to start recording.",
-        .children =  (struct menu_entry[]) {
-            {
-                .name = "Resolution",
-                .priv = &resolution_index_x,
-                .max = COUNT(resolution_presets_x) - 1,
-                .select = resolution_change_fine_value,
-                .update = resolution_update,
-                .choices = RESOLUTION_CHOICES_X,
-            },
-            {
-                .name = "Aspect ratio",
-                .priv = &aspect_ratio_index,
-                .max = COUNT(aspect_ratio_presets_num) - 1,
-                .update = aspect_ratio_update,
-                .choices = aspect_ratio_choices,
-            },
-            {
-                .name       = "Data format",
-                .priv       = &output_format,
-                .max        = 5,
-                .update     = output_format_update,
-                .choices    = CHOICES(
-                                "14-bit",
-                                "12-bit",
-                                "10-bit",
-                                "14-bit lossless",
-                                "12-bit lossless",
-                                "11...8-bit lossless",
-                              ),
-                .help       = "Choose the output format (bit depth, compression) for the raw stream:",
-                .help2      = "14-bit: native uncompressed format used in Canon firmware.\n"
-                              "12-bit: uncompressed, 2 LSB trimmed (nearly lossless on current sensor).\n"
-                              "10-bit: uncompressed, 4 LSB trimmed (small loss of detail in shadows).\n"
-                              "14-bit compressed with Canon's Lossless JPEG. Recommended ISO < 100.\n"
-                              "Signal divided by 4 before compression. Recommended ISO 100-1600.\n"
-                              "Signal divided by 8/16/32/64 before compression, depending on ISO.\n"
-            },
-            {
-                .name = "Preview",
-                .priv = &preview_mode,
-                .max = 3,
-                .choices = CHOICES("Auto", "Real-time", "Framing", "Frozen LV"),
-                .help  = "Raw video preview (long half-shutter press to override):",
-                .help2 = "Auto: ML chooses what's best for each video mode\n"
-                         "Plain old LiveView (color and real-time). Framing is not always correct.\n"
-                         "Slow (not real-time) and low-resolution, but has correct framing.\n"
-                         "Freeze LiveView for more speed; uses 'Framing' preview if Global Draw ON.\n",
-                .depends_on = DEP_GLOBAL_DRAW,
-            },
-            {
-                .name = "Crop rec preview",
-                .priv = &prevmode,
-                .max = 1,
-                .choices = CHOICES("OFF", "auto mode"),
-                .help  = "Auto mode OFF\n"
-                "Autoselects preview modes,framing GRAY_ULTRA_FAST.\n",
-            },
-            {
-                .name = "Framed preview",
-                .select = menu_open_submenu,
-                .icon_type = IT_ACTION,
-                .help = "Configure framed preview.",
-                .children = ( struct menu_entry[] ) {
-                    {
-                        .name = "Engine",
-                        .priv = &framed_preview_engine,
-                        .max = 1,
-                        .update = framed_preview_engine_update,
-                        .choices = CHOICES( "legacy", "ultrafast" ),
-                        .help  = "Use legacy or ultrafast (cached) framed preview."
-                    },
-                    {
-                        .name = "Comportment",
-                        .select = menu_open_submenu,
-                        .icon_type = IT_ACTION,
-                        .help = "Setup ultrafast preview comportment.",
-                        .children = ( struct menu_entry[] ) {
-                            {
-                                .name = "Idle",
-                                .select = menu_open_submenu,
-                                .icon_type = IT_ACTION,
-                                .help = "Setup idle preview comportment.",
-                                .children = ( struct menu_entry[] ) {
-                                    {
-                                        .name = "Style",
-                                        .priv = &framed_preview_idle_style,
-                                        .max = 1,
-                                        .update = framed_preview_idle_style_update,
-                                        .choices = CHOICES( "colored", "grayscaled" ),
-                                        .help  = "Setup idle preview coloring style."
-                                    },
-                                    {
-                                        .name = "Resolution",
-                                        .priv = &framed_preview_idle_resolution,
-                                        .max = 1,
-                                        .update = framed_preview_idle_resolution_update,
-                                        .choices = CHOICES( "half", "quarter" ),
-                                        .help  = "Setup idle horizontal resolution."
-                                    },
-                                    MENU_EOL
-                                },
-                            },
-                            {
-                                .name = "Recording",
-                                .select = menu_open_submenu,
-                                .icon_type = IT_ACTION,
-                                .help = "Setup recording preview comportment.",
-                                .children = ( struct menu_entry[] ) {
-                                    {
-                                        .name = "Style",
-                                        .priv = &framed_preview_recording_style,
-                                        .max = 1,
-                                        .update = framed_preview_recording_style_update,
-                                        .choices = CHOICES( "colored", "grayscaled" ),
-                                        .help  = "Setup recording preview coloring style."
-                                    },
-                                    {
-                                        .name = "Resolution",
-                                        .priv = &framed_preview_recording_resolution,
-                                        .max = 1,
-                                        .update = framed_preview_recording_resolution_update,
-                                        .choices = CHOICES( "half", "quarter" ),
-                                        .help  = "Setup recording horizontal resolution."
-                                    },
-                                    MENU_EOL
-                                },
-                            },
-                            MENU_EOL
-                        },
-                    },
-                    {
-                        .name = "Timing",
-                        .priv = &framed_preview_timing,
-                        .max = 2,
-                        .update = framed_preview_timing_update,
-                        .choices = CHOICES( "legacy", "tempered", "agressive" ),
-                        .help  = "Choose display timing configuration."
-                    },
-                    {
-                        .name = "Statistics",
-                        .priv = &framed_preview_statistics,
-                        .max = 1,
-                        .update = framed_preview_statistics_update,
-                        .choices = CHOICES( "OFF", "ON" ),
-                        .help  = "Dump preview statistics in the console."
-                    },
-                    MENU_EOL
+        {
+            .name = "RAW video",
+            .priv = &raw_video_enabled,
+            .max = 1,
+            .update = raw_main_update,
+            .submenu_width = 710,
+            .depends_on = DEP_LIVEVIEW | DEP_MOVIE_MODE,
+            .help = "Record RAW video (MLV format).",
+            .help2 = "Press LiveView to start recording.",
+            .children = (struct menu_entry[]){
+                {
+                    .name = "Resolution",
+                    .priv = &resolution_index_x,
+                    .max = COUNT(resolution_presets_x) - 1,
+                    .select = resolution_change_fine_value,
+                    .update = resolution_update,
+                    .choices = RESOLUTION_CHOICES_X,
                 },
-            },
-            {
-                .name = "Card Spanning",
-                .priv = &card_spanning,
-                .max = 1,
-                .help  = "Span video file over cards to use SD+CF write speed.",
-                .help2 = "May increase performance.",
-            },
-            {
-                .name = "Preferred card",
-                .priv = &pref_card,
-                .max = 2,
-                .choices = CHOICES("OFF", "CF", "SD"),
-                .help  = "Select CF or SD card to record onto. Not working with Card spanning ON.",
-                .help2 = "Overrides the Pref Card settings menu.",
-            },
-            {
-                .name = "Kill global draw",
-                .priv = &kill_gd,
-                .max = 1,
-                .choices = CHOICES("OFF", "ON"),
-                .help = "Disable global draw while recording.",
-                .help2 = "May help with performance. Some previews depend on GD.",
-            },
-            {
-                .name    = "Pre-record",
-                .priv    = &pre_record,
-                .max     = 10,
-                .update  = pre_recording_update,
-                .help    = "Pre-records a few seconds of video into memory, discarding old frames.",
-                .help2   = "Press REC twice: 1 - to start pre-recording, 2 - for normal recording.",
-            },
-            {
-                .name    = "Rec trigger",
-                .priv    = &rec_trigger,
-                .max     = 3,
-                .choices = CHOICES("OFF", "Half-shutter: start/pause", "Half-shutter: hold", "Half-shutter: pre only"),
-                .help    = "Use external trigger to start/pause recording within a video clip.",
-                .help2   = "Disabled (press REC as usual).\n"
-                           "Press half-shutter to start/pause recording within the current clip.\n"
-                           "Press and hold the shutter halfway to record (e.g. for short events).\n"
-                           "Half-shutter to save only the pre-recorded frames (at least 1 frame).\n",
-            },
-            {
-                .name = "Movie Restart",
-                .priv = &movie_restart,
-                .max        = 1,
-                .help = "Auto-restart movie recording, if it happens to stop.",
-                .depends_on = DEP_MOVIE_MODE,
-            },
-            {
-                .name = "Digital dolly",
-                .priv = &dolly_mode,
-                .max = 1,
-                .help = "Smooth panning of the recording window (software dolly).",
-                .help2 = "Use arrow keys (joystick) to move the window.",
-                .advanced = 1,
-            },
-            {
-                .name   = "H.264 proxy",
-                .priv   = &h264_proxy_menu,
-                .max    = 1,
-                .update = h264_proxy_update,
-                .help   = "Record a H.264 video at the same time.",
-                .help2  = "For best performance, record H.264 on SD and RAW on CF.",
-                .advanced = 1,
-            },
-            {
-                .name = "Card warm-up",
-                .priv = &warm_up,
-                .max = 7,
-                .choices = CHOICES("OFF", "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", "512 MB", "1 GB"),
-                .help  = "Write a large file on the card at camera startup.",
-                .help2 = "Some cards seem to get a bit faster after this.",
-                .advanced = 1,
-            },
-            {
-                .name = "Use SRM memory",
-                .priv = &use_srm_memory,
-                .max = 1,
-                .help = "Allocate memory from SRM job buffers (normally used for still capture).",
-                .help2 = "Side effect: will show BUSY on the screen and might affect other functions.",
-                .advanced = 1,
-            },
-            {
-                .name = "Small hacks",
-                .priv = &small_hacks,
-                .max = 2,
-                .choices = CHOICES("OFF", "af off", "af on"),
-                .help  = "Slow down Canon GUI, disable auto exposure and af, white balance...",
-                .help2  = "Set af on to enable auto focus but loose som overhead.",
-                .advanced = 1,
-            },
-            {
+                {
+                    .name = "Aspect ratio",
+                    .priv = &aspect_ratio_index,
+                    .max = COUNT(aspect_ratio_presets_num) - 1,
+                    .update = aspect_ratio_update,
+                    .choices = aspect_ratio_choices,
+                },
+                {.name = "Data format",
+                 .priv = &output_format,
+                 .max = 5,
+                 .update = output_format_update,
+                 .choices = CHOICES(
+                     "14-bit",
+                     "12-bit",
+                     "10-bit",
+                     "14-bit lossless",
+                     "12-bit lossless",
+                     "11...8-bit lossless", ),
+                 .help = "Choose the output format (bit depth, compression) for the raw stream:",
+                 .help2 = "14-bit: native uncompressed format used in Canon firmware.\n"
+                          "12-bit: uncompressed, 2 LSB trimmed (nearly lossless on current sensor).\n"
+                          "10-bit: uncompressed, 4 LSB trimmed (small loss of detail in shadows).\n"
+                          "14-bit compressed with Canon's Lossless JPEG. Recommended ISO < 100.\n"
+                          "Signal divided by 4 before compression. Recommended ISO 100-1600.\n"
+                          "Signal divided by 8/16/32/64 before compression, depending on ISO.\n"},
+                {
+                    .name = "Preview",
+                    .priv = &preview_mode,
+                    .max = 3,
+                    .choices = CHOICES("Auto", "Real-time", "Framing", "Frozen LV"),
+                    .help = "Raw video preview (long half-shutter press to override):",
+                    .help2 = "Auto: ML chooses what's best for each video mode\n"
+                             "Plain old LiveView (color and real-time). Framing is not always correct.\n"
+                             "Slow (not real-time) and low-resolution, but has correct framing.\n"
+                             "Freeze LiveView for more speed; uses 'Framing' preview if Global Draw ON.\n",
+                    .depends_on = DEP_GLOBAL_DRAW,
+                },
+                {
+                    .name = "Crop rec preview",
+                    .priv = &prevmode,
+                    .max = 1,
+                    .choices = CHOICES("OFF", "auto mode"),
+                    .help = "Auto mode OFF\n"
+                            "Autoselects preview modes,framing GRAY_ULTRA_FAST.\n",
+                },
+                {
+                    .name = "Framed preview",
+                    .select = menu_open_submenu,
+                    .icon_type = IT_ACTION,
+                    .help = "Configure framed preview.",
+                    .children = (struct menu_entry[]){
+                        {.name = "Engine",
+                         .priv = &framed_preview_engine,
+                         .max = 1,
+                         .update = framed_preview_engine_update,
+                         .choices = CHOICES("legacy", "ultrafast"),
+                         .help = "Use legacy or ultrafast (cached) framed preview."},
+                        {
+                            .name = "Comportment",
+                            .select = menu_open_submenu,
+                            .icon_type = IT_ACTION,
+                            .help = "Setup ultrafast preview comportment.",
+                            .children = (struct menu_entry[]){
+                                {
+                                    .name = "Idle",
+                                    .select = menu_open_submenu,
+                                    .icon_type = IT_ACTION,
+                                    .help = "Setup idle preview comportment.",
+                                    .children = (struct menu_entry[]){
+                                        {.name = "Style",
+                                         .priv = &framed_preview_idle_style,
+                                         .max = 1,
+                                         .update = framed_preview_idle_style_update,
+                                         .choices = CHOICES("colored", "grayscaled"),
+                                         .help = "Setup idle preview coloring style."},
+                                        {.name = "Resolution",
+                                         .priv = &framed_preview_idle_resolution,
+                                         .max = 1,
+                                         .update = framed_preview_idle_resolution_update,
+                                         .choices = CHOICES("half", "quarter"),
+                                         .help = "Setup idle horizontal resolution."},
+                                        MENU_EOL},
+                                },
+                                {
+                                    .name = "Recording",
+                                    .select = menu_open_submenu,
+                                    .icon_type = IT_ACTION,
+                                    .help = "Setup recording preview comportment.",
+                                    .children = (struct menu_entry[]){{.name = "Style", .priv = &framed_preview_recording_style, .max = 1, .update = framed_preview_recording_style_update, .choices = CHOICES("colored", "grayscaled"), .help = "Setup recording preview coloring style."}, {.name = "Resolution", .priv = &framed_preview_recording_resolution, .max = 1, .update = framed_preview_recording_resolution_update, .choices = CHOICES("half", "quarter"), .help = "Setup recording horizontal resolution."}, MENU_EOL},
+                                },
+                                MENU_EOL},
+                        },
+                        {.name = "Timing", .priv = &framed_preview_timing, .max = 2, .update = framed_preview_timing_update, .choices = CHOICES("legacy", "tempered", "agressive"), .help = "Choose display timing configuration."},
+                        {.name = "Statistics", .priv = &framed_preview_statistics, .max = 1, .update = framed_preview_statistics_update, .choices = CHOICES("OFF", "ON"), .help = "Dump preview statistics in the console."},
+                        MENU_EOL},
+                },
+                {
+                    .name = "Card Spanning",
+                    .priv = &card_spanning,
+                    .max = 1,
+                    .help = "Span video file over cards to use SD+CF write speed.",
+                    .help2 = "May increase performance.",
+                },
+                {
+                    .name = "Preferred card",
+                    .priv = &pref_card,
+                    .max = 2,
+                    .choices = CHOICES("OFF", "CF", "SD"),
+                    .help = "Select CF or SD card to record onto. Not working with Card spanning ON.",
+                    .help2 = "Overrides the Pref Card settings menu.",
+                },
+                {
+                    .name = "Kill global draw",
+                    .priv = &kill_gd,
+                    .max = 1,
+                    .choices = CHOICES("OFF", "ON"),
+                    .help = "Disable global draw while recording.",
+                    .help2 = "May help with performance. Some previews depend on GD.",
+                },
+                {
+                    .name = "Pre-record",
+                    .priv = &pre_record,
+                    .max = 10,
+                    .update = pre_recording_update,
+                    .help = "Pre-records a few seconds of video into memory, discarding old frames.",
+                    .help2 = "Press REC twice: 1 - to start pre-recording, 2 - for normal recording.",
+                },
+                {
+                    .name = "Rec trigger",
+                    .priv = &rec_trigger,
+                    .max = 3,
+                    .choices = CHOICES("OFF", "Half-shutter: start/pause", "Half-shutter: hold", "Half-shutter: pre only"),
+                    .help = "Use external trigger to start/pause recording within a video clip.",
+                    .help2 = "Disabled (press REC as usual).\n"
+                             "Press half-shutter to start/pause recording within the current clip.\n"
+                             "Press and hold the shutter halfway to record (e.g. for short events).\n"
+                             "Half-shutter to save only the pre-recorded frames (at least 1 frame).\n",
+                },
+                {
+                    .name = "Movie Restart",
+                    .priv = &movie_restart,
+                    .max = 1,
+                    .help = "Auto-restart movie recording, if it happens to stop.",
+                    .depends_on = DEP_MOVIE_MODE,
+                },
+                {
+                    .name = "Digital dolly",
+                    .priv = &dolly_mode,
+                    .max = 1,
+                    .help = "Smooth panning of the recording window (software dolly).",
+                    .help2 = "Use arrow keys (joystick) to move the window.",
+                    .advanced = 1,
+                },
+                {
+                    .name = "H.264 proxy",
+                    .priv = &h264_proxy_menu,
+                    .max = 1,
+                    .update = h264_proxy_update,
+                    .help = "Record a H.264 video at the same time.",
+                    .help2 = "For best performance, record H.264 on SD and RAW on CF.",
+                    .advanced = 1,
+                },
+                {
+                    .name = "Card warm-up",
+                    .priv = &warm_up,
+                    .max = 7,
+                    .choices = CHOICES("OFF", "16 MB", "32 MB", "64 MB", "128 MB", "256 MB", "512 MB", "1 GB"),
+                    .help = "Write a large file on the card at camera startup.",
+                    .help2 = "Some cards seem to get a bit faster after this.",
+                    .advanced = 1,
+                },
+                {
+                    .name = "Use SRM memory",
+                    .priv = &use_srm_memory,
+                    .max = 1,
+                    .help = "Allocate memory from SRM job buffers (normally used for still capture).",
+                    .help2 = "Side effect: will show BUSY on the screen and might affect other functions.",
+                    .advanced = 1,
+                },
+                {
+                    .name = "Small hacks",
+                    .priv = &small_hacks,
+                    .max = 2,
+                    .choices = CHOICES("OFF", "af off", "af on"),
+                    .help = "Slow down Canon GUI, disable auto exposure and af, white balance...",
+                    .help2 = "Set af on to enable auto focus but loose som overhead.",
+                    .advanced = 1,
+                },
+                {
                     .name = "More hacks",
                     .priv = &more_hacks,
-            .choices = CHOICES("OFF", "lvface", "lvface + aewb"),
+                    .choices = CHOICES("OFF", "lvface", "lvface + aewb"),
                     .max = 2,
-                    .help  = "Disable lvface and aewb.",
-            .help2 = "aewb: locks wb and shutter! Disables shutter fine-tuning!",
+                    .help = "Disable lvface and aewb.",
+                    .help2 = "aewb: locks wb and shutter! Disables shutter fine-tuning!",
                     .advanced = 1,
-            },
-            {
+                },
+                {
                     .name = "One more hack",
                     .priv = &one_more_hack,
-            .choices = CHOICES("OFF", "ON"),
+                    .choices = CHOICES("OFF", "ON"),
                     .max = 1,
-                    .help  = "CartridgeCancel.",
+                    .help = "CartridgeCancel.",
                     .advanced = 1,
+                },
+                {
+                    .name = "Show graph",
+                    .priv = &show_graph,
+                    .choices = CHOICES("OFF", "Buffers", "Buffer usage"),
+                    .max = 2,
+                    .help = "Displays a graph of the current buffer usage and expected frames.",
+                    .advanced = 1,
+                },
+                {
+                    .name = "Sync beep",
+                    .priv = &sync_beep,
+                    .max = 1,
+                    .help = "Beeps on recording start for better sync.",
+                    .advanced = 1,
+                },
+                {
+                    .name = "Show EDMAC",
+                    .priv = &show_edmac,
+                    .max = 1,
+                    .help = "Plots the EDMAC read/write pointers within the source raw buffer.",
+                    .help2 = "If green (RD) is always above red (WR), it's safe to use single-buffering.",
+                    .advanced = 1,
+                },
+                {
+                    .name = "Playback",
+                    .select = raw_playback_start,
+                    .update = raw_playback_update,
+                    .icon_type = IT_ACTION,
+                    .help = "Play back the last raw video clip.",
+                },
+                MENU_ADVANCED_TOGGLE,
+                MENU_EOL,
             },
-            {
-                .name = "Show graph",
-                .priv = &show_graph,
-                .choices = CHOICES("OFF", "Buffers", "Buffer usage"),
-                .max = 2,
-                .help = "Displays a graph of the current buffer usage and expected frames.",
-                .advanced = 1,
-            },
-            {
-                .name = "Sync beep",
-                .priv = &sync_beep,
-                .max    = 1,
-                .help = "Beeps on recording start for better sync.",
-                .advanced = 1,
-            },
-            {
-                .name   = "Show EDMAC",
-                .priv   = &show_edmac,
-                .max    = 1,
-                .help   = "Plots the EDMAC read/write pointers within the source raw buffer.",
-                .help2  = "If green (RD) is always above red (WR), it's safe to use single-buffering.",
-                .advanced = 1,
-            },
-            {
-                .name = "Playback",
-                .select = raw_playback_start,
-                .update = raw_playback_update,
-                .icon_type = IT_ACTION,
-                .help = "Play back the last raw video clip.",
-            },
-            MENU_ADVANCED_TOGGLE,
-            MENU_EOL,
-        },
-    }
-};
-
+        }};
 
 static REQUIRES(GuiMainTask)
 unsigned int raw_rec_keypress_cbr(unsigned int key)
@@ -4616,49 +4570,51 @@ unsigned int raw_rec_update_preview(unsigned int ctx)
     /* when recording, preview both full-size buffers,
      * to make sure it's not recording every other frame */
     static int fi = 0; fi = !fi;
-    
+
     // legacy engine:
-    if( get_framed_preview_param( FRAMED_PREVIEW_PARAM__ENGINE ) == FRAMED_PREVIEW_PARAM__ENGINE__LEGACY ) {
+    if (get_framed_preview_param(FRAMED_PREVIEW_PARAM__ENGINE) == FRAMED_PREVIEW_PARAM__ENGINE__LEGACY)
+    {
         raw_preview_fast_ex2(
-            RAW_IS_RECORDING ? fullsize_buffers[ fi ] : ( void * ) -1,
-            PREVIEW_HACKED && RAW_IS_RECORDING ? ( void * ) -1 : buffers->dst_buf,
+            RAW_IS_RECORDING ? fullsize_buffers[fi] : (void *)-1,
+            PREVIEW_HACKED && RAW_IS_RECORDING ? (void *)-1 : buffers->dst_buf,
             -1,
             -1,
-            need_for_speed ?
-                RAW_PREVIEW_GRAY_ULTRA_FAST :
-                /*(shamem_read(0xC0F06804) == 0x93a011b || shamem_read(0xC0F06804) == 0x8d6011b || shamem_read(0xC0F06804) == 0x962011b || shamem_read(0xC0F06804) == 0x8f8011b) && */
-                ( RAW_IS_RECORDING && prevmode ) ?
-                    RAW_PREVIEW_GRAY_ULTRA_FAST : /* 1x3 binning mode test */
-                    RAW_PREVIEW_COLOR_HALFRES,
-            raw_recording_state == RAW_RECORDING
-        );
+            need_for_speed ? RAW_PREVIEW_GRAY_ULTRA_FAST :
+                           /*(shamem_read(0xC0F06804) == 0x93a011b || shamem_read(0xC0F06804) == 0x8d6011b || shamem_read(0xC0F06804) == 0x962011b || shamem_read(0xC0F06804) == 0x8f8011b) && */
+                (RAW_IS_RECORDING && prevmode) ? RAW_PREVIEW_GRAY_ULTRA_FAST
+                                               : /* 1x3 binning mode test */
+                RAW_PREVIEW_COLOR_HALFRES,
+            raw_recording_state == RAW_RECORDING);
     }
     // ultrafast engine:
-    else {
+    else
+    {
         raw_preview_fast_ex2(
-            RAW_IS_RECORDING ? fullsize_buffers[ fi ] : ( void * ) -1,
-            PREVIEW_HACKED && RAW_IS_RECORDING ? ( void * ) -1 : buffers->dst_buf,
+            RAW_IS_RECORDING ? fullsize_buffers[fi] : (void *)-1,
+            PREVIEW_HACKED && RAW_IS_RECORDING ? (void *)-1 : buffers->dst_buf,
             -1,
             -1,
             RAW_PREVIEW_ADAPTIVE,
-            raw_recording_state == RAW_RECORDING
-        );
+            raw_recording_state == RAW_RECORDING);
     }
     give_semaphore(settings_sem);
 
     // legacy timing method:
-    const int framed_preview_timing = get_framed_preview_param( FRAMED_PREVIEW_PARAM__TIMING );
-    if( framed_preview_timing == FRAMED_PREVIEW_PARAM__TIMING__LEGACY ) {
+    const int framed_preview_timing = get_framed_preview_param(FRAMED_PREVIEW_PARAM__TIMING);
+    if (framed_preview_timing == FRAMED_PREVIEW_PARAM__TIMING__LEGACY)
+    {
         // be gentle with the CPU, save it for recording (especially if the buffer is almost full):
-        msleep( need_for_speed  ? ( ( queued_frames > valid_slot_count / 2 ) ? 416 : 200 ) : 20 );
+        msleep(need_for_speed ? ((queued_frames > valid_slot_count / 2) ? 416 : 200) : 20);
     }
     // new timing method (tempered or agressive):
-    else {
+    else
+    {
         // when there's too much queued frame, we need to slow down to avoid record stopping
         // note: no need to sleep for nothing when not recording at all (allow realtime preview)
-        if( need_for_speed ) {
+        if (need_for_speed)
+        {
             const bool agressive = framed_preview_timing == FRAMED_PREVIEW_PARAM__TIMING__AGRESSIVE;
-            msleep( queued_frames > ( valid_slot_count >> 1 ) ? ( agressive ? 200 : 416 ) : ( agressive ? 100 : 200 ) );
+            msleep(queued_frames > (valid_slot_count >> 1) ? (agressive ? 200 : 416) : (agressive ? 100 : 200));
         }
     }
 
@@ -4759,16 +4715,16 @@ static unsigned int raw_rec_init()
     settings_sem = create_named_semaphore(0, 1);
     if (cam_dualcard) queue_sem = create_named_semaphore("queue_sem", 1);
 
-    ASSERT(((uint32_t)task_create("compress_task", 0x0F, 0x1000, compress_task, (void*)0) & 1) == 0);
-    
+    ASSERT(((uint32_t)task_create("compress_task", 0x0F, 0x1000, compress_task, (void *)0) & 1) == 0);
+
     // reinject previously saved preview default values:
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__ENGINE, framed_preview_engine );
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__IDLE_STYLE, framed_preview_idle_style );
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__IDLE_RESOLUTION, framed_preview_idle_resolution );
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__RECORDING_STYLE, framed_preview_recording_style );
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__RECORDING_RESOLUTION, framed_preview_recording_resolution );
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__TIMING, framed_preview_timing );
-    set_framed_preview_param( FRAMED_PREVIEW_PARAM__STATISTICS, framed_preview_statistics );
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__ENGINE, framed_preview_engine);
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__IDLE_STYLE, framed_preview_idle_style);
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__IDLE_RESOLUTION, framed_preview_idle_resolution);
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__RECORDING_STYLE, framed_preview_recording_style);
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__RECORDING_RESOLUTION, framed_preview_recording_resolution);
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__TIMING, framed_preview_timing);
+    set_framed_preview_param(FRAMED_PREVIEW_PARAM__STATISTICS, framed_preview_statistics);
 
     return 0;
 }
@@ -4807,13 +4763,13 @@ MODULE_CONFIGS_START()
     MODULE_CONFIG(movie_restart)
     MODULE_CONFIG(preview_mode)
     MODULE_CONFIG(prevmode)
-    MODULE_CONFIG( framed_preview_engine )
-    MODULE_CONFIG( framed_preview_idle_style )
-    MODULE_CONFIG( framed_preview_idle_resolution )
-    MODULE_CONFIG( framed_preview_recording_style )
-    MODULE_CONFIG( framed_preview_recording_resolution )
-    MODULE_CONFIG( framed_preview_timing )
-    MODULE_CONFIG( framed_preview_statistics )
+    MODULE_CONFIG(framed_preview_engine)
+    MODULE_CONFIG(framed_preview_idle_style)
+    MODULE_CONFIG(framed_preview_idle_resolution)
+    MODULE_CONFIG(framed_preview_recording_style)
+    MODULE_CONFIG(framed_preview_recording_resolution)
+    MODULE_CONFIG(framed_preview_timing)
+    MODULE_CONFIG(framed_preview_statistics)
     MODULE_CONFIG(use_srm_memory)
     MODULE_CONFIG(small_hacks)
     MODULE_CONFIG(more_hacks)
