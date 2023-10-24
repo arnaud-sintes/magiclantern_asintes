@@ -150,7 +150,7 @@ To activate it, we need to use the <font style="background-color:blue; color: wh
 
 ![](readme.assets/fsq_02_calib.jpg)
 
-<font size=2>*Just because ASCII art animation if fun!*</font>
+<font size=2>*Just because ASCII art animation is fun!*</font>
 
 The first time we're switching to "**edit mode**", we may face two complementary situations:
 
@@ -164,7 +164,7 @@ The first time we're switching to "**edit mode**", we may face two complementary
 
   The animated header indicating we need to wait for the end of the process.
 
-  **Checking lens limits** is performing **two fast rotations** of the lens (*forward* then *backward*) in order to determine the current minimum relative *lens focus position* and deduce the **rotation direction**.
+  **Checking lens limits** is performing **two fast rotations** of the lens (*forward* then *backward*) in order to determine the **number of steps**, the current minimum relative *lens focus position* and deduce the **rotation direction**.
 
 - It's the first time we're running *focus sequencing* with an **unknown lens**, then the program will run a whole **lens calibration process**.
 
@@ -180,11 +180,11 @@ The first time we're switching to "**edit mode**", we may face two complementary
 
   - a complete step by step (***slow***) ***forward*** rotation of the lens, in order to index the **normalized focus positions**
   - a partial very ***fast*** ***backward*** rotation of the lens, then a partial ***medium*** speed ***backward*** rotation, in order to compute the **average step size** for *stepping 2 and 3*
-  - a complete ***slow backward*** rotation finishing the move, in order to compute the ***step size speed*** with a *stepping of 1*
+  - a partial ***slow backward*** rotation finishing the move, in order to compute the ***step size speed*** with a *stepping of 1*
   - a complete ***medium*** speed ***forward*** rotation, in order to compute the ***step size speed*** with a *stepping of 2*
   - a complete ***fast backward*** rotation, in order to compute the ***step size speed*** with a *stepping of 3*
 
-The lens calibration result is then **saved on disk**, this is why we don't need to redo it until we're using another lens, while the lens limits checking process must be done for each camera run, the relative position of the lens being dependent of its position at startup.
+The lens calibration result is then **saved on disk**, this is why we don't need to redo it until we're using another lens, while the *lens limits checking* process must be done for each camera run, the relative position of the lens being dependent of its position at startup.
 
 Once these two processes were done (instant switch if already performed), the focus sequencing module will switch into "**edit mode**".
 
@@ -207,9 +207,9 @@ This display, common between "edit" and "play" modes, is split in four parts:
 
 ![](readme.assets/fsq_05_edit.jpg)
 
-e.g.: the image above, show we're currently editing the second focus point in a sequence of three elements, the focus point distance being 16.470m and the transition duration from previous point being of 5 seconds.
+<font size=2>*The image above show we're currently editing the second focus point in a sequence of three elements, the focus point distance being 16.470m and the transition duration from previous point being of 5 seconds*</font>
 
-With this mode, you can **setup** and **edit** a whole sequence of focus point, using the following camera triggers:
+With this mode, we can **setup** and **edit** a whole sequence of focus point, using the following camera triggers:
 
 ![](readme.assets/5D3_edit.jpg)
 
@@ -219,7 +219,7 @@ With this mode, you can **setup** and **edit** a whole sequence of focus point, 
 
   
 
-- <font style="background-color:blue; color: white">**[HALF-SHUTTER]**</font> (*or any autofocus related button, depending of your ML key mapping*) button to **do an autofocus operation**, the **focus distance** value of the current focus point in the sequence being continuously ***highlighted*** with the current distance to display a difference exists with the registered value:
+- <font style="background-color:blue; color: white">**[HALF-SHUTTER]**</font> (*or any autofocus related button, depending of our ML key mapping*) button to **do an autofocus operation**, the **focus distance** value of the current focus point in the sequence being continuously ***highlighted*** with the current distance to display a difference exists with the registered value:
 
   ```
   [edit]   1 / 1 | {16.470m} |
@@ -285,7 +285,7 @@ Play mode is indicated by a **[play]** header, followed by focus sequence inform
 
 This display of this overlay obey to the exact same rules as for the *edit* mode.
 
-Using *play* mode, we can now simply **replay the focus point sequence** by simply run from a focus point to the next one, **using a single push button**.
+Using *play* mode, we can now **replay the focus point sequence** by simply run from a focus point to the next one, **using a single push button**.
 
 ![](readme.assets/5D3_play.jpg)
 
@@ -294,7 +294,7 @@ Using *play* mode, we can now simply **replay the focus point sequence** by simp
 
 
 
-- <font style="background-color:blue; color: white">**[SET]**</font> button to **go from the current point in the sequence to the next one**, following the registered expected transition duration.
+- <font style="background-color:blue; color: white">**[SET]**</font> button to **go from the current point in the sequence to the next one**, following the registered transition duration.
 
   When transitioning from a point to the other one, the display switch in the following intermediate state:
 
@@ -326,7 +326,7 @@ As explained before, the **lens calibration** result is stored in a specific set
 
 It means we can safely shutdown the camera and we will retrieve our whole focus sequence definition, being usable to reply it properly (after an initial *lens limits checking process*).
 
-This settings file is saved and loaded from the following file:
+This settings file is saved and loaded from the following path:
 
 ```
 ML/SETTINGS/focus_sq.cfg
