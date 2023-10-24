@@ -2331,7 +2331,6 @@ static bool FAST init_preview_ultrafast_cache(const int _y1, const int _y2, cons
         puc->p_raw_offsets = malloc(((vram_lv.width * vram_lv.height) >> 1) * sizeof(uint32_t));
         if (puc->p_raw_offsets == 0)
         {
-            printf("ERROR: ultrafast cache allocation failure!\n");
             return false; // memory allocation failure
         }
     }
