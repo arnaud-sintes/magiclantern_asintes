@@ -9,7 +9,7 @@
 
 #include "focus_sq.h"
 
-// TODO user documentation / video demonstration:
+// TODO video demonstration:
 // - focus sequence activation via ML menu
 // - switch from "inactive" to "edit" mode (INFO)
 // - calibration process the first time

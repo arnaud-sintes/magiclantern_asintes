@@ -7,6 +7,8 @@
 - We cannot use an external *focus puller monitor* because we're recording videos using **crop modes**, which are currently incompatible with the camera *HDMI output*
 - We're recording videos as a **single camera operator** without the assistance of a *focus puller* and the sequence is too complex to deal with *manual focusing*
 
+![](readme.assets/focus_puller.jpg)
+
 👉 *focus sequencing* provides then a way to easily **record multiple lens focus points**, so we can prepare a sequence including camera or target movements and subsequently **replay** them as we're recording videos, using a simple push button to switch to a point to the next one in the sequence.
 
 > **Typical use case**: I'm a *single camera operator* recording a video using *crop modes* and my sequence is a combination of a *dolly-in* movement (with a speed ramp) and a horizontal camera rotation used to keep an object at the center of the composition.
@@ -15,9 +17,11 @@
 
 ## Technical issues and workarounds
 
+We can already jump to the *how to use* / *how to install* chapters already if we prefer, this chapter providing **technical insights** to detail *how* it works, giving also explanations about the purpose of the **lens calibration process**.
+
 ### State of the art
 
-Imagine you want to play around focus points with a given camera lens, using *Magic Lantern* you can see that:
+Imagine we want to play around focus points with a given camera lens, using *Magic Lantern* we can see that:
 
 - we can move the lens programmatically, using the ***lens_focus*** function available in *lens.c*
 
@@ -110,24 +114,226 @@ When doing a *lens focus transition* operation using a target duration, we can n
 
 Because we rely over a specific *lens_focus* function, there's currently no way to use this module outside specific builds that are including this function.
 
-Our best shot is then to use one specific ***crop_rec_4k_mlv_snd_isogain_1x3_presets_ultrafast_fsq*** *Magic Lantern* build [available in my personal repository](https://github.com/arnaud-sintes/magiclantern_asintes/releases), which is basically an up-to-date fork of Danne's one (with also the *[ultrafast framed preview](https://www.magiclantern.fm/forum/index.php?topic=26998)* feature).
+Our best shot is then to use one specific ***crop_rec_4k_mlv_snd_isogain_1x3_presets_ultrafast_fsq*** *Magic Lantern* build [available in my personal repository](https://github.com/arnaud-sintes/magiclantern_asintes/releases), which is basically an up-to-date fork of *Danne*'s one (with also the *[ultrafast framed preview](https://www.magiclantern.fm/forum/index.php?topic=26998)* feature).
 
 Using this build, the ***focus_sq*** module is simply **embedded and activated by default**.
 
 ## How to use
 
-TODO
+### Starting focus sequencing
 
-### Toggle between modes
+First of all, we need to start the ***focus sequencing* task**, just using the dedicated option available in the *Magic Lantern*'s **Focus** menu:
 
-### Calibration
+![](readme.assets/sequence_menu.jpg)
 
-### Edit focus sequence
+When started, we may see the following overlay in *LiveView*:
 
-### Replay focus sequence
+```
+[    ]
+```
 
-### Battery saving
+![](readme.assets/fsq_01_idle.jpg)
 
-### Save and reload
+<font size=2>*I promise I will cleanup my screen the next time, hackers got now a nice fingerprint...*</font>
 
-## Summary
+It means the *focus sequencing* task is running, the sequencing being currently **deactivated**.
+
+To activate it, we need to use the <font style="background-color:blue; color: white">**[INFO]**</font> push button of the camera, allowing to switch from a "*deactivated*" state to the "***edit mode***".
+
+> Focus sequencing LV overlays will be automatically hidden (and related key mapping deactivated) when going inside the ML menus.
+
+![](readme.assets/5D3_idle.jpg)
+
+> The <font style="background-color:blue; color: white">**[INFO]**</font> button will loop between "*deactivated*", "*edit mode*" and "*play mode*".
+
+### Calibration process
+
+![](readme.assets/fsq_02_calib.jpg)
+
+<font size=2>*Just because ASCII art animation if fun!*</font>
+
+The first time we're switching to "**edit mode**", we may face two complementary situations:
+
+* It's the **first time since the camera was started** we're accessing *focus sequencing*, then the program will run a short **lens limits checking process**.
+
+  During the lens limits checking process, we may see the following overlay in *LiveView*:
+
+  ```
+  [.oOo] checking lens limits...
+  ```
+
+  The animated header indicating we need to wait for the end of the process.
+
+  **Checking lens limits** is performing **two fast rotations** of the lens (*forward* then *backward*) in order to determine the current minimum relative *lens focus position* and deduce the **rotation direction**.
+
+- It's the first time we're running *focus sequencing* with an **unknown lens**, then the program will run a whole **lens calibration process**.
+
+  During the lens calibration process, we may see the following overlay in *LiveView*:
+
+  ```
+  [oOo.] calibrating lens...
+  ```
+
+  The animated header indicating we need to wait for the end of the process.
+
+  **Calibrating lens** is performing the following operations:
+
+  - a complete step by step (***slow***) ***forward*** rotation of the lens, in order to index the **normalized focus positions**
+  - a partial very ***fast*** ***backward*** rotation of the lens, then a partial ***medium*** speed ***backward*** rotation, in order to compute the **average step size** for *stepping 2 and 3*
+  - a complete ***slow backward*** rotation finishing the move, in order to compute the ***step size speed*** with a *stepping of 1*
+  - a complete ***medium*** speed ***forward*** rotation, in order to compute the ***step size speed*** with a *stepping of 2*
+  - a complete ***fast backward*** rotation, in order to compute the ***step size speed*** with a *stepping of 3*
+
+The lens calibration result is then **saved on disk**, this is why we don't need to redo it until we're using another lens, while the lens limits checking process must be done for each camera run, the relative position of the lens being dependent of its position at startup.
+
+Once these two processes were done (instant switch if already performed), the focus sequencing module will switch into "**edit mode**".
+
+### Edit mode
+
+![](readme.assets/fsq_04_edit.jpg)
+
+Edit mode is indicated by a **[edit]** header, followed by focus sequence information depending of the context:
+
+```
+[edit]   1 / 1 |    inf.   |
+```
+
+This display, common between "edit" and "play" modes, is split in four parts:
+
+- an *header* indicating the current focus sequence **mode** (*edit* or *play*)
+- the current focus point **index** in the sequence and the **sequence length**
+- the **focus distance** (can be displayed in *centimeters*, *meters* or being *infinite*)
+- the **transition duration** in second (not available on the first sequence focus point)
+
+![](readme.assets/fsq_05_edit.jpg)
+
+e.g.: the image above, show we're currently editing the second focus point in a sequence of three elements, the focus point distance being 16.470m and the transition duration from previous point being of 5 seconds.
+
+With this mode, you can **setup** and **edit** a whole sequence of focus point, using the following camera triggers:
+
+![](readme.assets/5D3_edit.jpg)
+
+- <font style="background-color:blue; color: white">**[INFO]**</font> button to switch from "*edit mode*" to "*play mode*" (*highlight* to show the change)
+
+- <font style="background-color:blue; color: white">**[RATE]**</font> toggle between LV display on/off (battery saver...)
+
+  
+
+- <font style="background-color:blue; color: white">**[HALF-SHUTTER]**</font> (*or any autofocus related button, depending of your ML key mapping*) button to **do an autofocus operation**, the **focus distance** value of the current focus point in the sequence being continuously ***highlighted*** with the current distance to display a difference exists with the registered value:
+
+  ```
+  [edit]   1 / 1 | {16.470m} |
+  ```
+
+- <font style="background-color:blue; color: white">**[SET]**</font> button to **register the current focus distance** as the property of the current focus point in the sequence, this operation being following by a quick ***highlight***:
+
+  ```
+  [edit]   1 / 1 | >16.470m< |
+  ```
+
+- <font style="background-color:blue; color: white">**[Q]**</font> button to **add a focus sequence point** right after the current one, using the current focus distance value.
+
+  By default, the transition duration with the previous point is always computed to be the fastest physically possible:
+
+  ```
+  [edit] > 2</ 2 |     54cm  |  1.243s
+  ```
+
+- <font style="background-color:blue; color: white">**[TRASH]**</font> button to **remove the current focus point** in the sequence
+
+- <font style="background-color:blue; color: white">**[UP]**</font> & <font style="background-color:blue; color: white">**[DOWN]**</font> buttons to **increase or decrease** the transition duration value, showing the **target value** during the ***highlight***:
+
+  ```
+  [edit]   2 / 2 |     54cm  | >1.300s<
+  ```
+
+  > This *target* value **may be different** of the one displayed after the highlight, showing then the **expected duration** computed by regarding the physical limitations of the lens rotation (see later)
+
+- <font style="background-color:blue; color: white">**[LEFT]**</font> & <font style="background-color:blue; color: white">**[RIGHT]**</font> buttons to **navigate between the focus points** (loop on first & last), applying the fastest possible transition
+
+When transitioning from a point to the other one, the display switch in the following intermediate state:
+
+```
+[edit] ==>( 2) | (   78cm) | (0.800s)
+```
+
+an animation showing we're moving to a destination point, the distance being the real-time updated lens focus distance and the duration being then a countdown to zero starting from the expected transition duration (*as fast as possible*, in this case).
+
+![](readme.assets/fsq_03_edit.jpg)
+
+### Duration and distribution
+
+As explained quickly before, every focus point in the sequence (except the 1st one) got a **transition duration** value indicating the time (second) used to go from a lens focus position to the next one.
+
+The user set a **target duration**, meaning the duration he's expecting to do the transition, but because of the physical lens rotation limitations, an algorithm will try to compute the **closest expected duration**: our lenses can rotate using **three different *step size* values** (*1, 2 & 3*), these three values producing non-linear physical lens step rotation (e.g.: *1*, *4* and *26 steps*, respectively) at three different rotation speed rate... the algorithm will then try to **distribute** the different possible step size values so we're ***theoretically* reaching exactly the expected lens position** (e.g.: going from focus lens position 1 to 2 in the sequence) with a duration **as close as possible** as the user target value.
+
+This is why sometimes we will see a "stagnating" expected duration value in the UI, event when decreasing the target value: it generally means it's ***not possible to go faster***.
+
+In order to help, the default value computed when adding a new point in the sequence is the **fastest transition duration value possible**, this is why it's better to first change the focus distance value (using *autofocus*) then to add a new point in the sequence.
+
+### Play mode
+
+When hitting the <font style="background-color:blue; color: white">**[INFO]**</font> button in "*edit*" mode, we're switching to the "***play***" mode.
+
+![](readme.assets/fsq_06_play.jpg)
+
+Play mode is indicated by a **[play]** header, followed by focus sequence information depending of the context:
+
+```
+[play]   1 / 1 |    inf.   |
+```
+
+This display of this overlay obey to the exact same rules as for the *edit* mode.
+
+Using *play* mode, we can now simply **replay the focus point sequence** by simply run from a focus point to the next one, **using a single push button**.
+
+![](readme.assets/5D3_play.jpg)
+
+- <font style="background-color:blue; color: white">**[INFO]**</font> button to switch from "*play mode*" to "*inactive*" (*highlight* to show the change)
+- <font style="background-color:blue; color: white">**[RATE]**</font> toggle between LV display on/off (battery saver...)
+
+
+
+- <font style="background-color:blue; color: white">**[SET]**</font> button to **go from the current point in the sequence to the next one**, following the registered expected transition duration.
+
+  When transitioning from a point to the other one, the display switch in the following intermediate state:
+
+  ```
+  [play] ==>( 2) | (   78cm) | (0.800s)
+  ```
+
+  an animation showing we're moving to a destination point, the distance being the real-time updated lens focus distance and the duration being then a **countdown to zero** starting from the expected transition duration.
+
+  ![](readme.assets/fsq_07_play.jpg)
+
+  When the transition is done, we're just displaying the information of the current focus point:![](readme.assets/fsq_08_play.jpg)
+
+- <font style="background-color:blue; color: white">**[Q]**</font> button will **return to the first focus position** in the sequence, *as fast as possible*
+
+Of course, the **play mode** is designed to be used **during video recording** (*background task*).
+
+### Transition and distribution
+
+We've seen before that an algorithm already computed the proper ***step size* distribution** to perform the transition from a point to another, when doing the move, the replay algorithm performs on its side another **distribution** of the different *step size* orders to execute (alongside potential *sleep* statements) so the movement between the two focus position is visually **as smooth as possible** (no visible *acceleration* nor *deceleration*).
+
+Note also a check is performed after the movement to **ensure we exactly reached the expected position**, with a potential fix of the missing steps in all directions.
+
+> A console log is dumped after the move to show the position deviation (after and before correction) and also the duration deviation (between the expected and the real duration).
+
+### Settings file
+
+As explained before, the **lens calibration** result is stored in a specific settings file, which is also the case for the **edited sequence** itself, including focus positions and transition durations.
+
+It means we can safely shutdown the camera and we will retrieve our whole focus sequence definition, being usable to reply it properly (after an initial *lens limits checking process*).
+
+This settings file is saved and loaded from the following file:
+
+```
+ML/SETTINGS/focus_sq.cfg
+```
+
+## License and credits
+
+The *focus sequencing* module for *Magic Lantern* is provided under the [GPLv3 licensing model](https://www.gnu.org/licenses/gpl-3.0.en.html).
+
+Thanks to *`WalterSchulz`* & *`?❄? names_are_hard ?❄?`* for the support!
