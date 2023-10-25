@@ -9,26 +9,6 @@
 
 #include "focus_sq.h"
 
-// TODO video demonstration:
-// - focus sequence activation via ML menu
-// - switch from "inactive" to "edit" mode (INFO)
-// - calibration process the first time
-// - reloading calibration / checking limit
-// - auto-focus / setting focus distance value (SET)
-// - auto-focus, display difference / adding a point next-to (Q)
-// - navigating between focus point (LEFT/RIGHT)
-// - removing a point (TRASH)
-// - adding multiple points (auto-focus/SET/Q)
-// - changing the transition duration value (UP/DOWN)
-// - explanation about the target vs expected duration, speed distributions
-// - switch to play mode (INFO)
-// - go to 1st point (Q)
-// - play sequence to next point on time (SET)
-// - explanation about smooth distribution
-// - demonstration while recording
-// - screen saver (RATE)
-// - summary of camera buttons in inactive/edit/play modes
-
 // default data structure values:
 static struct fsq_data_t g_data = {
     .constants = {
