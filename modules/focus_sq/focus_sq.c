@@ -386,7 +386,7 @@ size_t fsq_closest_step_from_position(unsigned _focus_position)
 void fsq_calibrate_lens()
 {
     // calibration in progress...
-    g_data.display.state = (size_t)fsq_calibrate_lens;
+    g_data.display.state = fsq_calibrating_lens;
 
     // avoid direct usage of the vector here:
     unsigned *focus_positions = malloc(g_data.constants.max_focus_positions * sizeof(unsigned));
