@@ -21,7 +21,7 @@
 
 ## Technical issues and workarounds
 
-We can already jump to the *how to use* / *how to install* chapters already if we prefer, this chapter providing **technical insights** to detail *how* it works, giving also explanations about the purpose of the **lens calibration process**.
+We can already jump to the *how to use* / *how to install* chapters if we prefer, this chapter providing **technical insights** to detail *how* it works, giving also explanations about the purpose of the **lens calibration process**.
 
 ### State of the art
 
