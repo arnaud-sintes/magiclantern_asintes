@@ -15,6 +15,10 @@
 >
 > 👉 While I'm rehearsing the camera track and movements, I'll record three or four intermediate focus points in a sequence with proper speed transition settings, so my targeted object is always perfectly focused and I'll replay the focus sequence while I'm finally recording the scene, going forward from a focus point to the next one by pushing a single button.
 
+## Video demonstration
+
+[![Magic Lantern - Focus sequencing feature](https://img.youtube.com/vi/P4l6_LKDNcY/0.jpg)](https://www.youtube.com/watch?v=P4l6_LKDNcY)
+
 ## Technical issues and workarounds
 
 We can already jump to the *how to use* / *how to install* chapters already if we prefer, this chapter providing **technical insights** to detail *how* it works, giving also explanations about the purpose of the **lens calibration process**.
