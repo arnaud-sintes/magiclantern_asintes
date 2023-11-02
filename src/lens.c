@@ -2928,63 +2928,6 @@ static LVINFO_UPDATE_FUNC(fps_update)
     }
 }
 
-struct card_t
-{
-    char *drive;                   // drive letter of the card
-    struct card_info *p_card_info; // pointer to internal card information structure
-    double total_space_gb;         // initial estimation of total card space (GB)
-    int free_space_gb;             // dynamic free space (GB) estimation
-};
-
-// compute the cumulated file size (GB) of a given folder:
-double get_folder_size_gb(char *_folder)
-{
-    struct fio_file file;
-    struct fio_dirent *dirent = FIO_FindFirstEx(_folder, &file);
-    if (IS_ERROR(dirent))
-    {
-        return 0;
-    }
-    double cumulated_size_gb = 0;
-    do
-    {
-        if (file.name[0] == 0 || file.name[0] == '.' || (file.mode & ATTR_DIRECTORY))
-        {
-            continue;
-        }
-        cumulated_size_gb += (((double)file.size) / (1024 * 1024 * 1024));
-    } while (FIO_FindNextEx(dirent, &file) == 0);
-    FIO_FindClose(dirent);
-    return cumulated_size_gb;
-}
-
-// compute the cumulated file size (GB) of the DCIM folder of a given card drive:
-double get_dcim_folder_size_gb(char *_drive)
-{
-    char root_folder[FIO_MAX_PATH_LENGTH];
-    snprintf(root_folder, FIO_MAX_PATH_LENGTH, "%sDCIM/", _drive);
-    struct fio_file file;
-    struct fio_dirent *dirent = FIO_FindFirstEx(root_folder, &file);
-    if (IS_ERROR(dirent))
-    {
-        return 0;
-    }
-    double cumulated_size_kb = 0;
-    do
-    {
-        // search for sub-folders:
-        if (file.name[0] == 0 || file.name[0] == '.' || !(file.mode & ATTR_DIRECTORY))
-        {
-            continue;
-        }
-        char folder[FIO_MAX_PATH_LENGTH];
-        snprintf(folder, FIO_MAX_PATH_LENGTH, "%s%s", root_folder, file.name);
-        cumulated_size_kb += get_folder_size_gb(folder);
-    } while (FIO_FindNextEx(dirent, &file) == 0);
-    FIO_FindClose(dirent);
-    return cumulated_size_kb;
-}
-
 static LVINFO_UPDATE_FUNC(free_space_update)
 {
     LVINFO_BUFFER(14);
@@ -2996,53 +2939,26 @@ static LVINFO_UPDATE_FUNC(free_space_update)
         return;
     }
 
-    // the first time, we need to identify what card is available or not:
-    static struct card_t cards[2] = {
-        {"A:/", NULL, 0},
-        {"B:/", NULL, 0},
-    };
-    static struct card_t *available_cards[2] = {NULL, NULL};
-    static int card_count = 0;
-    if (card_count == 0)
-    {
-        for (int i = 0; i < 2; i++)
-        {
-            struct card_t *p_card = &cards[i];
-            if (!is_dir(p_card->drive))
-            {
-                continue;
-            }
-            p_card->p_card_info = get_card(i);
-            // get free space on disk and size of DCIM folder:
-            double free_space_gb = ((double)(((uint64_t)get_free_space_32k(p_card->p_card_info)) << 5) / (1024 * 1024));
-            double dcim_space_gb = get_dcim_folder_size_gb(p_card->drive);
-            // we get an approximation of the total disk space:
-            p_card->total_space_gb = free_space_gb + dcim_space_gb;
-            available_cards[card_count++] = p_card;
-        }
-    }
+    // get actual card list:
+    struct actual_cards_t *p_actual_cards = get_actual_cards();
 
-    // every time, we need to update free space for all available cards:
-    for (int i = 0; i < card_count; i++)
+    // update free space:
+    for (int i = 0; i < p_actual_cards->count; i++)
     {
-        struct card_t *p_card = available_cards[i];
-        // get an approximation of the current free space:
-        double dcim_size_gb = get_dcim_folder_size_gb(p_card->drive);
-        int free_space_gb = (int)(p_card->total_space_gb - dcim_size_gb);
-        p_card->free_space_gb = (free_space_gb > 999) ? 999 : free_space_gb;
+        update_free_space(p_actual_cards->infos[i]);
     }
 
     // setup display for 1 slot:
-    struct card_t *p_card_1 = available_cards[0];
-    if (card_count == 1)
+    struct card_info *p_card_1 = p_actual_cards->infos[0];
+    if (p_actual_cards->count == 1)
     {
-        snprintf(buffer, sizeof(buffer), "%s:%d", p_card_1->p_card_info->type, p_card_1->free_space_gb);
+        snprintf(buffer, sizeof(buffer), "%s:%d", p_card_1->type, p_card_1->free_space_GB);
     }
     // setup display for 2 slots:
     else
     {
-        struct card_t *p_card_2 = available_cards[1];
-        snprintf(buffer, sizeof(buffer), "%s:%d %s:%d", p_card_1->p_card_info->type, p_card_1->free_space_gb, p_card_2->p_card_info->type, p_card_2->free_space_gb);
+        struct card_info *p_card_2 = p_actual_cards->infos[1];
+        snprintf(buffer, sizeof(buffer), "%s:%d %s:%d", p_card_1->type, p_card_1->free_space_GB, p_card_2->type, p_card_2->free_space_GB);
     }
 }
 

@@ -7,27 +7,40 @@
 #define CARD_B 1
 #define CARD_C 2
 
-struct card_info {
-    char * drive_letter;
-    char * type;            /* SD/CF/EXT */
-    int cluster_size;
-    int free_space_raw;
-    int file_number;
-    int folder_number;
-    char * maker;           /* only for some cameras; NULL otherwise */
-    char * model;
+struct card_info
+{
+        char *drive_letter;
+        char *type; /* SD/CF/EXT */
+        int cluster_size;
+        int free_space_raw;
+        int file_number;
+        int folder_number;
+        char *maker; /* only for some cameras; NULL otherwise */
+        char *model;
+        double total_space_GB; // initial estimation of total card space (GB)
+        int free_space_GB;     // dynamic free space (GB) estimation
 };
 
-struct card_info * get_ml_card();
-struct card_info * get_shooting_card();
+struct actual_cards_t
+{
+        int count; // number of actual active cards
+        struct card_info *infos[2]; // pointers to valid card_info
+};
 
-struct card_info * get_card(int cardId);
+struct card_info *get_ml_card();
+struct card_info *get_shooting_card();
 
-int get_free_space_32k (const struct card_info * card);
+struct card_info *get_card(int cardId);
+
+struct actual_cards_t *get_actual_cards();
+
+int get_free_space_32k(const struct card_info *card);
+
+void update_free_space(struct card_info *_p_card_info);
 
 /* returns true if the specified file or directory exists */
-int is_file(const char* path);
-int is_dir(const char* path);
+int is_file(const char *path);
+int is_dir(const char *path);
 
 /* returns a numbered file name that does not already exist.
  * example:
@@ -142,8 +155,12 @@ size_t read_file( const char * filename, void * buf, size_t size);
 
 uint8_t* read_entire_file(const char * filename, int* buf_size);
 
-const char* get_dcim_dir();
-const char* get_dcim_dir_suffix();
+const char *get_dcim_dir_ex(struct card_info *_p_card_info);
+const char *get_dcim_dir();
+const char *get_dcim_dir_suffix();
+
+// compute the cumulated file size (GB) of a given folder
+double get_folder_size_GB(char *_folder);
 
 extern int __attribute__((format(printf,2,3)))
 my_fprintf(
