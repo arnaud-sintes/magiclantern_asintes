@@ -82,10 +82,9 @@ struct actual_cards_t *get_actual_cards()
             // reference active cards and increment actual card count:
             actual_cards.infos[actual_cards.count++] = p_card_info;
             // compute card total space:
-            double free_space_GB = ((double)(((uint64_t)get_free_space_32k(p_card_info)) << 5) / (1024 * 1024));
-            p_card_info->total_space_GB = free_space_GB + get_folder_size_GB(get_dcim_dir_ex(p_card_info));
-            // compute free space approximation:
-            update_free_space(p_card_info);
+            p_card_info->free_space_MB = ((uint64_t)get_free_space_32k(p_card_info)) >> 5;
+            uint64_t dcim_size_MB = get_folder_size_MB(get_dcim_dir_ex(p_card_info));
+            p_card_info->total_space_MB = p_card_info->free_space_MB + dcim_size_MB;
         }
     }
     return &actual_cards;
@@ -99,9 +98,8 @@ int get_free_space_32k(const struct card_info *card)
 void update_free_space(struct card_info *_p_card_info)
 {
     // approximate free space based of total space and current DCIM folder content size:
-    double dcim_size_GB = get_folder_size_GB(get_dcim_dir_ex(_p_card_info));
-    int free_space_GB = (int)(_p_card_info->total_space_GB - dcim_size_GB);
-    _p_card_info->free_space_GB = (free_space_GB > 999) ? 999 : free_space_GB;
+    uint64_t dcim_size_MB = get_folder_size_MB(get_dcim_dir_ex(_p_card_info));
+    _p_card_info->free_space_MB = _p_card_info->total_space_MB - dcim_size_MB;
 }
 
 static CONFIG_INT("card.test", card_test_enabled, 1);
@@ -368,7 +366,7 @@ const char *get_dcim_dir()
     return get_dcim_dir_ex(SHOOTING_CARD);
 }
 
-double get_folder_size_GB(char *_folder)
+uint64_t get_folder_size_MB(const char *_folder)
 {
     struct fio_file file;
     struct fio_dirent *dirent = FIO_FindFirstEx(_folder, &file);
@@ -376,17 +374,17 @@ double get_folder_size_GB(char *_folder)
     {
         return 0;
     }
-    double cumulated_size_GB = 0;
+    uint64_t cumulated_size_KB = 0;
     do
     {
         if (file.name[0] == 0 || file.name[0] == '.' || (file.mode & ATTR_DIRECTORY))
         {
             continue;
         }
-        cumulated_size_GB += (((double)file.size) / (1024 * 1024 * 1024));
+        cumulated_size_KB += ((uint64_t)file.size) >> 10;
     } while (FIO_FindNextEx(dirent, &file) == 0);
     FIO_FindClose(dirent);
-    return cumulated_size_GB;
+    return cumulated_size_KB >> 10;
 }
 
 static void fixup_filename(char* new_filename, const char* old_filename, int size)

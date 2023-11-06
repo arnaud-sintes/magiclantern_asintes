@@ -2950,15 +2950,19 @@ static LVINFO_UPDATE_FUNC(free_space_update)
 
     // setup display for 1 slot:
     struct card_info *p_card_1 = p_actual_cards->infos[0];
+    int free_space_card_1_GB = (int)p_card_1->free_space_MB >> 10;
+    free_space_card_1_GB = (free_space_card_1_GB > 999) ? 999 : free_space_card_1_GB;
     if (p_actual_cards->count == 1)
     {
-        snprintf(buffer, sizeof(buffer), "%s:%d", p_card_1->type, p_card_1->free_space_GB);
+        snprintf(buffer, sizeof(buffer), "%s:%d", p_card_1->type, free_space_card_1_GB);
     }
     // setup display for 2 slots:
     else
     {
         struct card_info *p_card_2 = p_actual_cards->infos[1];
-        snprintf(buffer, sizeof(buffer), "%s:%d %s:%d", p_card_1->type, p_card_1->free_space_GB, p_card_2->type, p_card_2->free_space_GB);
+        int free_space_card_2_GB = (int)p_card_2->free_space_MB >> 10;
+        free_space_card_2_GB = (free_space_card_2_GB > 999) ? 999 : free_space_card_2_GB;
+        snprintf(buffer, sizeof(buffer), "%s:%d %s:%d", p_card_1->type, free_space_card_1_GB, p_card_2->type, free_space_card_2_GB);
     }
 }
 

@@ -17,8 +17,8 @@ struct card_info
         int folder_number;
         char *maker; /* only for some cameras; NULL otherwise */
         char *model;
-        double total_space_GB; // initial estimation of total card space (GB)
-        int free_space_GB;     // dynamic free space (GB) estimation
+        uint64_t total_space_MB; // initial estimation of total card space (MB)
+        uint64_t free_space_MB;  // dynamic free space (MB) estimation
 };
 
 struct actual_cards_t
@@ -159,8 +159,8 @@ const char *get_dcim_dir_ex(struct card_info *_p_card_info);
 const char *get_dcim_dir();
 const char *get_dcim_dir_suffix();
 
-// compute the cumulated file size (GB) of a given folder
-double get_folder_size_GB(char *_folder);
+// compute the cumulated file size (MB) of a given folder
+uint64_t get_folder_size_MB(const char *_folder);
 
 extern int __attribute__((format(printf,2,3)))
 my_fprintf(
