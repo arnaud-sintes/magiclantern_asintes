@@ -125,6 +125,12 @@ char *fsq_print_overlay__edit_play_content(size_t _cycle)
     }
     else
     {
+        // unknown distance reported:
+        if( focus_distance_cm == 0 )
+        {
+            snprintf(focus_distance_buffer, FSQ_CONTENT_LENGTH, " ----- ");
+        }
+        else
         // centimeter display:
         if (focus_distance_cm < 100)
         {
@@ -322,6 +328,7 @@ void fsq_set_focus_position_normalizer()
     // compute position normalizer regarding distance sign:
     int focus_position_distance = last_focus_position - g_data.lens_limits.first_focus_position;
     g_data.lens_limits.focus_position_normalizer = (focus_position_distance < 0) ? -1 : 1;
+    g_data.lens_limits.focus_distance = focus_position_distance * g_data.lens_limits.focus_position_normalizer;
     fsq_log("{fsq} normalizer sign : %s\n", (g_data.lens_limits.focus_position_normalizer > 0)
                                                 ? "positive"
                                                 : "negative");
@@ -378,7 +385,13 @@ void fsq_calibrate_lens()
 
         // store the normalized focus position and loop to next step:
         ASSERT(step_index < g_data.constants.max_focus_positions);
-        focus_positions[step_index++] = fsq_normalized_focus_position();
+        unsigned int pos = fsq_normalized_focus_position();
+        focus_positions[step_index++] = pos;
+
+        // stop after known limits, in case lens_focus_ex doesn't return error
+        // as it happens on some lens when moving with a step=1:
+        if( pos >= g_data.lens_limits.focus_distance )
+            break;
     }
     // move forward:
     while (lens_focus_ex(1, 1, true, true, 0));
@@ -461,8 +474,9 @@ void fsq_evaluate_step_size(size_t _mode)
     size_t step_1 = fsq_closest_step_from_position(fsq_normalized_focus_position());
 
     // compute corresponding step movement:
-    size_t step_size_steps = (step_0 - step_1) / loop;
-    fsq_log("{fsq} steps for step size of %d: %d\n", step_size, step_size_steps);
+    double step_size_steps = (double)(step_0 - step_1) / (double)loop;
+    static char steps_buffer[FSQ_CONTENT_LENGTH + 1];
+    fsq_log("{fsq} steps for step size of %d: %s\n", step_size, format_float_ex(step_size_steps, 3, steps_buffer, FSQ_CONTENT_LENGTH));
     g_data.store.modes[_mode].steps = step_size_steps;
 }
 
@@ -478,11 +492,11 @@ void fsq_evaluate_step_size_speed(bool _forward, size_t _mode)
                             : current_step;
 
     // evaluate the number of loop we can do depending of the current step size steps:
-    size_t step_size_steps = g_data.store.modes[_mode].steps;
-    size_t loop_count = step_count / step_size_steps;
+    double step_size_steps = g_data.store.modes[_mode].steps;
+    double loop_count = (double)step_count / step_size_steps;
 
     // get the actual step count that will be reached regarding the step size:
-    size_t real_step_count = loop_count * step_size_steps;
+    double real_step_count = loop_count * step_size_steps;
 
     // get timepoint before the move:
     int t_before_ms = get_ms_clock();
@@ -496,7 +510,7 @@ void fsq_evaluate_step_size_speed(bool _forward, size_t _mode)
     lens_focus_ex((unsigned)loop_count, (unsigned)step_size, _forward, false, 0);
 
     // evaluate the current step size speed (in steps per second):
-    double step_size_speed = (double)(real_step_count * 1000) / (double)(get_ms_clock() - t_before_ms);
+    double step_size_speed = (real_step_count * 1000) / (double)(get_ms_clock() - t_before_ms);
 
     // stabilize focus position before continuing:
     wait_for_stabilized_focus_position();
@@ -507,7 +521,7 @@ void fsq_evaluate_step_size_speed(bool _forward, size_t _mode)
     g_data.store.modes[_mode].speed = step_size_speed;
 
     // how many steps are remaining to reach the initial destination?
-    size_t step_count_remaining = step_count - real_step_count;
+    size_t step_count_remaining = step_count - (size_t)real_step_count;
 
     // something remaining, do the move with a step size of 1 (without waiting for feedback):
     if (step_count_remaining != 0)
@@ -536,7 +550,7 @@ double fsq_distribution_duration(struct fsq_distribution_t *const _p_distributio
     {
         if (_p_distribution->mode_call_counts[i] != 0)
         {
-            duration_s += (_p_distribution->mode_call_counts[i] * g_data.store.modes[i].steps) / g_data.store.modes[i].speed;
+            duration_s += ((double)_p_distribution->mode_call_counts[i] * g_data.store.modes[i].steps) / g_data.store.modes[i].speed;
         }
     }
     return duration_s;

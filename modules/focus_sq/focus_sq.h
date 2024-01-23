@@ -60,7 +60,7 @@ struct fsq_display_t
 // single mode configuration:
 struct fsq_step_mode_t
 {
-    size_t steps; // fixed step count taken in a single 'do' call
+    double steps; // fixed step count taken in a single 'do' call
     double speed; // mode speed in steps per second
 };
 
@@ -110,6 +110,7 @@ struct fsq_limits_t
 {
     int first_focus_position;      // first known focus position
     int focus_position_normalizer; // focus position normalizer
+    int focus_distance;            // focus distance
 };
 
 // main focus sequencing data structure:
