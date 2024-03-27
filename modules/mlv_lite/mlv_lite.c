@@ -2151,6 +2151,21 @@ else
      * so undoing this hack is no longer needed */
 }
 
+int is_more_hacks_selected()
+{
+    if (small_hacks >= 2) return 1;
+
+    return 0;
+}
+
+static int WillSuspendAeWbTask = 0; // flag tells that we are going to suspend AeWb task
+
+int AeWbTask_Disabled()
+{
+    if (WillSuspendAeWbTask) return 1;
+    return 0;
+}
+
 static REQUIRES(RawRecTask)
 void hack_liveview(int unhack)
 {
@@ -2230,6 +2245,32 @@ void hack_liveview(int unhack)
             else /* unhack */
             {
                 unpatch_memory(dialog_refresh_timer_addr);
+            }
+        }
+    }
+
+    /*  https://www.magiclantern.fm/forum/index.php?topic=26443.0 */
+    /*  The hacks would be disabled/reset after calling PauseLiveView after stopping RAW video recording */
+        
+    if (!video_mode_crop && !use_h264_proxy()) /*  Exlude Movie Crop Mode and H.264 Proxy from these hacks  */
+    {
+        if (!unhack) /* hack */
+        {
+            WillSuspendAeWbTask = 1; // we are going to suspend AeWb task (check code around shutter_blanking_idle in crop_rec.c)
+            wait_lv_frames(1);
+
+            if (small_hacks == 2)
+            {
+                lvfaceEnd();
+                aewbSuspend();
+            }
+
+            if (small_hacks == 3)
+            {
+                lvfaceEnd();
+                aewbSuspend();
+                CartridgeCancel();
+                wait_lv_frames(2); /* In some cases the first frame would be corrupted when calling CartridgeCancel */
             }
         }
     }
@@ -3936,6 +3977,7 @@ cleanup:
         if (liveview_hacked)
         {
             hack_liveview(1);
+            if (WillSuspendAeWbTask) WillSuspendAeWbTask = 0;
         }
         
         /* re-enable powersaving  */
