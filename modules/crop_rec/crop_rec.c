@@ -68,6 +68,9 @@ enum crop_preset {
     NUM_CROP_PRESETS
 };
 
+extern int is_more_hacks_selected();
+extern int AeWbTask_Disabled();
+
 /* presets are not enabled right away (we need to go to play mode and back)
  * so we keep two variables: what's selected in menu and what's actually used.
  * note: the menu choices are camera-dependent */

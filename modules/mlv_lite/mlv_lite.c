@@ -2153,17 +2153,14 @@ else
 
 int is_more_hacks_selected()
 {
-    if (small_hacks >= 2) return 1;
-
-    return 0;
+    return more_hacks == 0 ? 0 : 1;
 }
 
 static int WillSuspendAeWbTask = 0; // flag tells that we are going to suspend AeWb task
 
 int AeWbTask_Disabled()
 {
-    if (WillSuspendAeWbTask) return 1;
-    return 0;
+    return WillSuspendAeWbTask;
 }
 
 static REQUIRES(RawRecTask)
@@ -2248,32 +2245,6 @@ void hack_liveview(int unhack)
             }
         }
     }
-
-    /*  https://www.magiclantern.fm/forum/index.php?topic=26443.0 */
-    /*  The hacks would be disabled/reset after calling PauseLiveView after stopping RAW video recording */
-        
-    if (!video_mode_crop && !use_h264_proxy()) /*  Exlude Movie Crop Mode and H.264 Proxy from these hacks  */
-    {
-        if (!unhack) /* hack */
-        {
-            WillSuspendAeWbTask = 1; // we are going to suspend AeWb task (check code around shutter_blanking_idle in crop_rec.c)
-            wait_lv_frames(1);
-
-            if (small_hacks == 2)
-            {
-                lvfaceEnd();
-                aewbSuspend();
-            }
-
-            if (small_hacks == 3)
-            {
-                lvfaceEnd();
-                aewbSuspend();
-                CartridgeCancel();
-                wait_lv_frames(2); /* In some cases the first frame would be corrupted when calling CartridgeCancel */
-            }
-        }
-    }
 }
 
 static REQUIRES(LiveViewTask) FAST
@@ -2292,6 +2263,9 @@ void hack_liveview_more()
         cam_5d3_113 ? 0xff16d77c :
         cam_5d3_123 ? 0xff16e318 :
         0;
+
+        WillSuspendAeWbTask = 1; // we are going to suspend AeWb task (check code around shutter_blanking_idle in crop_rec.c)
+        msleep(20);
         
         lvfaceEnd();
         
